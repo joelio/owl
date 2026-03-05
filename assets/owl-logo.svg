@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Body -->
+  <ellipse cx="100" cy="120" rx="55" ry="60" fill="#4A3728" />
+  <!-- Belly -->
+  <ellipse cx="100" cy="135" rx="35" ry="40" fill="#D4A574" />
+  <!-- Belly feather pattern -->
+  <path d="M80,115 Q100,125 120,115" stroke="#C4956A" stroke-width="1.5" fill="none" />
+  <path d="M78,125 Q100,135 122,125" stroke="#C4956A" stroke-width="1.5" fill="none" />
+  <path d="M80,135 Q100,145 120,135" stroke="#C4956A" stroke-width="1.5" fill="none" />
+  <path d="M82,145 Q100,155 118,145" stroke="#C4956A" stroke-width="1.5" fill="none" />
+  <!-- Head -->
+  <ellipse cx="100" cy="70" rx="45" ry="38" fill="#5C4033" />
+  <!-- Ear tufts -->
+  <path d="M62,45 L55,20 L75,42" fill="#5C4033" />
+  <path d="M138,45 L145,20 L125,42" fill="#5C4033" />
+  <!-- Eye discs -->
+  <circle cx="80" cy="68" r="20" fill="#E8D5B7" />
+  <circle cx="120" cy="68" r="20" fill="#E8D5B7" />
+  <!-- Eyes -->
+  <circle cx="80" cy="68" r="12" fill="#FF8C00" />
+  <circle cx="120" cy="68" r="12" fill="#FF8C00" />
+  <!-- Pupils -->
+  <circle cx="82" cy="66" r="7" fill="#1A1A1A" />
+  <circle cx="122" cy="66" r="7" fill="#1A1A1A" />
+  <!-- Eye shine -->
+  <circle cx="85" cy="63" r="3" fill="white" opacity="0.8" />
+  <circle cx="125" cy="63" r="3" fill="white" opacity="0.8" />
+  <!-- Beak -->
+  <path d="M95,80 L100,92 L105,80" fill="#E8A317" />
+  <!-- Wings -->
+  <path d="M45,100 Q30,120 45,160 Q55,140 55,110 Z" fill="#3D2B1F" />
+  <path d="M155,100 Q170,120 155,160 Q145,140 145,110 Z" fill="#3D2B1F" />
+  <!-- Feet -->
+  <path d="M80,175 L70,185 M80,175 L80,188 M80,175 L90,185" stroke="#E8A317" stroke-width="3" stroke-linecap="round" fill="none" />
+  <path d="M120,175 L110,185 M120,175 L120,188 M120,175 L130,185" stroke="#E8A317" stroke-width="3" stroke-linecap="round" fill="none" />
+</svg>

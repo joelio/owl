@@ -8,3 +8,19 @@ build/
 .venv/
 .pytest_cache/
 .ruff_cache/
+
+# Secrets - never commit
+.env
+*.env
+keys.json
+config.yaml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

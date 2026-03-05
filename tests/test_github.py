@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from owl.github import _format_comment
 from owl.providers.base import OwlResponse

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch, AsyncMock
 
 import pytest
 from click.testing import CliRunner
@@ -35,9 +34,7 @@ class TestCLI:
         config = Config(council=[CouncilMember("test-model", "llm")])
         monkeypatch.setattr("owl.cli.main.load_config", lambda: config)
 
-        mock_responses = [
-            OwlResponse(model_name="test-model", source="llm", text="Test answer")
-        ]
+        mock_responses = [OwlResponse(model_name="test-model", source="llm", text="Test answer")]
 
         async def mock_convene(*args, **kwargs):
             return mock_responses

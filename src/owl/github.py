@@ -57,9 +57,7 @@ def _format_comment(response: OwlResponse) -> str:
     return "\n".join(lines)
 
 
-async def create_issue(
-    repo: str, title: str, body: str, token: str | None = None
-) -> int:
+async def create_issue(repo: str, title: str, body: str, token: str | None = None) -> int:
     """Create a GitHub issue and return its number."""
     token = token or _get_token()
     if not token:
@@ -78,9 +76,7 @@ async def create_issue(
         return resp.json()["number"]
 
 
-async def post_comment(
-    repo: str, issue_number: int, body: str, token: str | None = None
-) -> None:
+async def post_comment(repo: str, issue_number: int, body: str, token: str | None = None) -> None:
     """Post a comment to a GitHub issue."""
     token = token or _get_token()
     if not token:

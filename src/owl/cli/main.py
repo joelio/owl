@@ -28,10 +28,19 @@ def cli() -> None:
 
 @cli.command()
 @click.argument("prompt", required=False)
-@click.option("-f", "--file", "file_path", default=None, type=click.Path(exists=True), help="Read prompt from file")
+@click.option(
+    "-f",
+    "--file",
+    "file_path",
+    default=None,
+    type=click.Path(exists=True),
+    help="Read prompt from file",
+)
 @click.option("--gh", "github_repo", default=None, help="Post to GitHub repo (owner/repo)")
 @click.option("--issue", "issue_number", default=None, type=int, help="Existing issue number")
-def ask(prompt: str | None, file_path: str | None, github_repo: str | None, issue_number: int | None) -> None:
+def ask(
+    prompt: str | None, file_path: str | None, github_repo: str | None, issue_number: int | None
+) -> None:
     """Ask the council a question. Reads from --file, stdin pipe, or argument."""
     if file_path:
         with open(file_path) as f:
@@ -40,7 +49,9 @@ def ask(prompt: str | None, file_path: str | None, github_repo: str | None, issu
         if not sys.stdin.isatty():
             prompt = sys.stdin.read().strip()
         else:
-            console.print("[red]No prompt provided.[/red] Pass as argument, --file, or pipe via stdin.")
+            console.print(
+                "[red]No prompt provided.[/red] Pass as argument, --file, or pipe via stdin."
+            )
             return
 
     if not prompt:
@@ -50,7 +61,9 @@ def ask(prompt: str | None, file_path: str | None, github_repo: str | None, issu
     config = load_config()
 
     if not config.council:
-        console.print("[yellow]No council members configured.[/yellow] Run [bold]owl council[/bold] first.")
+        console.print(
+            "[yellow]No council members configured.[/yellow] Run [bold]owl council[/bold] first."
+        )
         return
 
     console.print(f"[dim]Querying {len(config.council)} council members...[/dim]")
@@ -80,7 +93,9 @@ def council_list() -> None:
     config = load_config()
 
     if not config.council:
-        console.print("[yellow]No council members configured.[/yellow] Run [bold]owl council[/bold] first.")
+        console.print(
+            "[yellow]No council members configured.[/yellow] Run [bold]owl council[/bold] first."
+        )
         return
 
     console.print("\n[bold]🦉 Current Council[/bold]\n")

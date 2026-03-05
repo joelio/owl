@@ -18,8 +18,7 @@ def print_responses(responses: list[OwlResponse], console: Console | None = None
 
     console.print()
     console.print(
-        f"[bold]🦉 Parliament of Owls — {len(success)} of {len(responses)} "
-        f"members responded[/bold]"
+        f"[bold]🦉 Parliament of Owls — {len(success)} of {len(responses)} members responded[/bold]"
     )
     console.print()
 

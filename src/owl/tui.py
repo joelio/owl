@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 from rich.console import Console
-from rich.prompt import Confirm
 from rich.table import Table
-from rich.text import Text
 
 from .config import Config, CouncilMember, load_config, save_config
 from .models import AvailableModel, discover_all_models
@@ -71,8 +69,11 @@ def run_council_selector() -> Config:
     while True:
         show_table()
         console.print()
-        console.print("Enter number to toggle, [bold]a[/bold]=all, [bold]n[/bold]=none, "
-                       "[bold]s[/bold]=save, [bold]q[/bold]=quit: ", end="")
+        console.print(
+            "Enter number to toggle, [bold]a[/bold]=all, [bold]n[/bold]=none, "
+            "[bold]s[/bold]=save, [bold]q[/bold]=quit: ",
+            end="",
+        )
 
         choice = input().strip().lower()
 

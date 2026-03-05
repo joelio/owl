@@ -89,8 +89,11 @@ class TestProvidersMissingKeys:
     @pytest.fixture(autouse=True)
     def clear_keys(self, monkeypatch):
         for key in [
-            "OPENAI_API_KEY", "PERPLEXITY_API_KEY", "GOOGLE_API_KEY",
-            "DEEPSEEK_API_KEY", "XAI_API_KEY",
+            "OPENAI_API_KEY",
+            "PERPLEXITY_API_KEY",
+            "GOOGLE_API_KEY",
+            "DEEPSEEK_API_KEY",
+            "XAI_API_KEY",
         ]:
             monkeypatch.delenv(key, raising=False)
 

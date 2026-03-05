@@ -1,13 +1,31 @@
-# 🦉 Parliament of Owls
+<p align="center">
+  <img src="assets/owl-on-bicycle.svg" alt="Parliament of Owls" width="400" />
+</p>
 
-Query multiple LLMs and deep research APIs in parallel. Results displayed in the terminal and optionally posted as comments to GitHub Issues.
+<h1 align="center">Parliament of Owls</h1>
 
-Built on [Simon Willison's `llm`](https://github.com/simonw/llm) for standard model access, with direct API integrations for deep research endpoints.
+<p align="center">
+  <em>Query multiple LLMs and deep research APIs in parallel.<br/>Post each response as a comment on a GitHub Issue.</em>
+</p>
+
+<p align="center">
+  <a href="https://github.com/joelio/owl/actions"><img src="https://github.com/joelio/owl/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/joelio/owl/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
+  <img src="https://img.shields.io/badge/python-3.10%2B-blue.svg" alt="Python 3.10+" />
+</p>
+
+---
+
+Built on [Simon Willison's `llm`](https://github.com/simonw/llm) for standard model access, with direct API integrations for deep research endpoints. Supports dozens of free models via [OpenRouter](https://openrouter.ai).
 
 ## Install
 
 ```bash
+# From source
 pip install -e .
+
+# Or globally with pipx (recommended)
+pipx install .
 ```
 
 ## Quick Start
@@ -19,7 +37,13 @@ owl council
 # 2. Ask the council
 owl ask "What are the tradeoffs between Redis and Memcached for session storage?"
 
-# 3. Optionally post to a GitHub issue
+# 3. Read from a file
+owl ask -f research_question.md
+
+# 4. Pipe from stdin
+echo "Explain quantum computing" | owl ask
+
+# 5. Post to a GitHub issue
 owl ask "..." --gh owner/repo
 owl ask "..." --gh owner/repo --issue 42
 ```
@@ -59,13 +83,13 @@ llm keys set deepseek            # paste your DeepSeek API key
 llm install llm-command-r
 llm keys set cohere              # paste your Cohere API key
 
-# OpenRouter (access dozens of models with one key)
+# OpenRouter (dozens of models, many free — no credit card needed)
 llm install llm-openrouter
 llm keys set openrouter          # paste your OpenRouter API key
 
 # Local models via Ollama
 llm install llm-ollama
-# No key needed - just have Ollama running
+# No key needed — just have Ollama running
 ```
 
 Verify your installed models:
@@ -80,25 +104,32 @@ You can also pass keys via environment variables (e.g. `OPENAI_API_KEY`) or inli
 
 See the full [llm plugin directory](https://llm.datasette.io/en/stable/plugins/directory.html) for more providers.
 
+### Free Models via OpenRouter
+
+Sign up at [openrouter.ai](https://openrouter.ai) (no credit card required) and get a free API key. Many powerful models are completely free:
+
+- **Claude 4.6 Opus** / Claude 4.5 Sonnet (Anthropic)
+- **GPT-5 Nano** / GPT-4o Mini (OpenAI)
+- **Gemini 3 Flash** / Gemma 3 27B (Google)
+- **Grok 4.1 Fast** (xAI)
+- **DeepSeek V3.2** (DeepSeek)
+- **GLM-4.5 Air** (Z.ai)
+- **Llama 3.3 70B** (Meta)
+- **Mistral Small 3.1** (Mistral)
+- Many more — run `llm models | grep ":free"` to see all
+
+Rate limits: ~20 req/min, ~200 req/day per free model. Owl staggers requests to stay within limits.
+
 ### Deep Research APIs
 
 Deep research models use direct API calls (not `llm` plugins). Set their keys as environment variables:
 
 ```bash
-# OpenAI Deep Research (o3-deep-research, o4-mini-deep-research)
-export OPENAI_API_KEY=sk-...
-
-# Perplexity Deep Research (sonar-deep-research)
-export PERPLEXITY_API_KEY=pplx-...
-
-# Google Gemini Deep Research (Interactions API)
-export GOOGLE_API_KEY=AI...
-
-# DeepSeek Reasoner
-export DEEPSEEK_API_KEY=sk-...
-
-# xAI Grok Agentic Search
-export XAI_API_KEY=xai-...
+export OPENAI_API_KEY=sk-...        # o3-deep-research, o4-mini-deep-research
+export PERPLEXITY_API_KEY=pplx-...  # sonar-deep-research
+export GOOGLE_API_KEY=AI...         # Gemini Deep Research Agent
+export DEEPSEEK_API_KEY=sk-...      # deepseek-reasoner
+export XAI_API_KEY=xai-...          # Grok agentic search
 ```
 
 Add these to your `~/.zshrc` or `~/.bashrc` to persist them.
@@ -118,12 +149,14 @@ export GITHUB_TOKEN=ghp_...
 ## Commands
 
 ```bash
-owl ask "prompt"                  # Query all council members
-owl ask "prompt" --gh owner/repo  # Create a new issue with responses
+owl ask "prompt"                          # Query all council members
+owl ask -f prompt.md                      # Read prompt from file
+cat prompt.txt | owl ask                  # Read from stdin
+owl ask "prompt" --gh owner/repo          # Create new issue with responses
 owl ask "prompt" --gh owner/repo --issue 42  # Post to existing issue
-owl council                       # Interactive TUI to select council members
-owl council-list                  # Show current council
-owl models                        # Show all available models
+owl council                               # Interactive TUI to select council members
+owl council-list                          # Show current council
+owl models                                # Show all available models
 ```
 
 ## Council Configuration
@@ -162,10 +195,33 @@ Each provider implements deep research differently:
 | **DeepSeek** | Reasoning model with chain-of-thought (`deepseek-reasoner`) | `/chat/completions` |
 | **xAI Grok** | Grok 4.1 with agentic web + X search and thinking mode | Chat Completions + tools |
 
+## Security
+
+- API keys are stored via `llm`'s key management or environment variables — never in the owl config file
+- The `~/.owl/config.yaml` only stores model names and sources, no secrets
+- GitHub tokens are read from `gh` CLI auth or `GITHUB_TOKEN` env var
+- All API calls use HTTPS
+- Deep research providers use 5-minute timeouts with retry on transient failures
+
 ## Development
 
 ```bash
+git clone https://github.com/joelio/owl.git
+cd owl
 pip install -e ".[dev]"
 pytest tests/ -v
 ruff check src/ tests/
+ruff format src/ tests/
 ```
+
+## Contributing
+
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feature/amazing-owl`)
+3. Make your changes with tests
+4. Ensure `ruff check` and `pytest` pass
+5. Open a PR
+
+## License
+
+MIT — see [LICENSE](LICENSE).
