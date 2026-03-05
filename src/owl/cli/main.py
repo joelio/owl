@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 
 import click
 from rich.console import Console
@@ -26,11 +27,26 @@ def cli() -> None:
 
 
 @cli.command()
-@click.argument("prompt")
+@click.argument("prompt", required=False)
+@click.option("-f", "--file", "file_path", default=None, type=click.Path(exists=True), help="Read prompt from file")
 @click.option("--gh", "github_repo", default=None, help="Post to GitHub repo (owner/repo)")
 @click.option("--issue", "issue_number", default=None, type=int, help="Existing issue number")
-def ask(prompt: str, github_repo: str | None, issue_number: int | None) -> None:
-    """Ask the council a question."""
+def ask(prompt: str | None, file_path: str | None, github_repo: str | None, issue_number: int | None) -> None:
+    """Ask the council a question. Reads from --file, stdin pipe, or argument."""
+    if file_path:
+        with open(file_path) as f:
+            prompt = f.read().strip()
+    elif prompt is None:
+        if not sys.stdin.isatty():
+            prompt = sys.stdin.read().strip()
+        else:
+            console.print("[red]No prompt provided.[/red] Pass as argument, --file, or pipe via stdin.")
+            return
+
+    if not prompt:
+        console.print("[red]Empty prompt.[/red]")
+        return
+
     config = load_config()
 
     if not config.council:
