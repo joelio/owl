@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "owl",
-      "source": ".",
+      "source": "./",
       "description": "Claude Code skill for Parliament of Owls — query multiple LLMs and deep research APIs in parallel"
     }
   ]
