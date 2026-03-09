@@ -1,0 +1,13 @@
+{
+  "name": "owl",
+  "version": "0.1.0",
+  "description": "Claude Code skill for Parliament of Owls — query multiple LLMs and deep research APIs in parallel",
+  "author": {
+    "name": "Joel Merrick",
+    "url": "https://github.com/joelio"
+  },
+  "repository": "https://github.com/joelio/owl",
+  "homepage": "https://github.com/joelio/owl",
+  "license": "MIT",
+  "keywords": ["owl", "llm", "multi-model", "deep-research", "council", "parallel", "cli"]
+}
