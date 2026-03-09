@@ -1,0 +1,12 @@
+{
+  "name": "Parliament of Owls",
+  "homepage": "https://github.com/joelio/owl",
+  "plugins": [
+    {
+      "name": "owl",
+      "description": "Claude Code skill for Parliament of Owls — query multiple LLMs and deep research APIs in parallel",
+      "source": "https://github.com/joelio/owl",
+      "version": "0.1.0"
+    }
+  ]
+}
