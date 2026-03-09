@@ -210,7 +210,11 @@ Owl ships as a [Claude Code plugin](https://docs.anthropic.com/en/docs/claude-co
 ### Install
 
 ```bash
-claude plugin install https://github.com/joelio/owl
+# Add the marketplace
+/plugin marketplace add joelio/owl
+
+# Install the plugin
+/plugin install owl@owl
 ```
 
 ### What it provides
