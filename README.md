@@ -203,6 +203,34 @@ Each provider implements deep research differently:
 - All API calls use HTTPS
 - Deep research providers use 5-minute timeouts with retry on transient failures
 
+## Claude Code Plugin
+
+Owl ships as a [Claude Code plugin](https://docs.anthropic.com/en/docs/claude-code/plugins), giving Claude full knowledge of the owl CLI, config, providers, and architecture.
+
+### Install
+
+```bash
+claude plugin install https://github.com/joelio/owl
+```
+
+### What it provides
+
+The `/owl:owl` skill teaches Claude how to:
+
+- Use all owl CLI commands and flags
+- Configure councils and debug model discovery
+- Add new providers to the codebase
+- Troubleshoot API key and connectivity issues
+- Post results to GitHub Issues
+
+### Local development
+
+When working on owl itself, load the plugin from your local checkout:
+
+```bash
+claude --plugin-dir .
+```
+
 ## Development
 
 ```bash
