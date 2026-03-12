@@ -42,8 +42,7 @@ _UNCERTAINTY_RULE = (
 )
 
 _NO_FLUFF = (
-    "No preamble, no closing remarks, no offers of further help. "
-    "Begin directly with ANSWER:."
+    "No preamble, no closing remarks, no offers of further help. Begin directly with ANSWER:."
 )
 
 
@@ -55,6 +54,7 @@ def _word_range(fmt: ResponseFormat) -> str:
 # ---------------------------------------------------------------------------
 # Standard model templates (used by llm plugin, and as fallback)
 # ---------------------------------------------------------------------------
+
 
 def _standard_system(fmt: ResponseFormat) -> str:
     return f"""\
@@ -71,6 +71,7 @@ Constraints:
 # ---------------------------------------------------------------------------
 # Per-provider variants
 # ---------------------------------------------------------------------------
+
 
 def _perplexity_system(fmt: ResponseFormat) -> str:
     return f"""\

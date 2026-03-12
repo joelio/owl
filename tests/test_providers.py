@@ -85,9 +85,7 @@ class TestRegistry:
 
 class TestElapsedSeconds:
     def test_response_stores_elapsed(self):
-        r = OwlResponse(
-            model_name="gpt-5", source="llm", text="Hello", elapsed_seconds=1.5
-        )
+        r = OwlResponse(model_name="gpt-5", source="llm", text="Hello", elapsed_seconds=1.5)
         assert r.elapsed_seconds == 1.5
 
     def test_response_elapsed_defaults_none(self):

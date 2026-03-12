@@ -93,8 +93,7 @@ class TestBuildConsolidatedComment:
         # Create responses that are large enough to exceed the limit
         big_text = "x" * 20_000
         responses = [
-            OwlResponse(model_name=f"model-{i}", source="llm", text=big_text)
-            for i in range(5)
+            OwlResponse(model_name=f"model-{i}", source="llm", text=big_text) for i in range(5)
         ]
         bodies = _build_consolidated_comment(responses, "test")
         assert len(bodies) > 1
