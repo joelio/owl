@@ -51,3 +51,18 @@ class TestPrintResponses:
         ]
         text = self._capture(responses)
         assert "Sources" in text
+
+    def test_timing_badge_shown(self):
+        responses = [
+            OwlResponse(model_name="gpt-5", source="llm", text="Answer", elapsed_seconds=3.2),
+        ]
+        text = self._capture(responses)
+        assert "3.2s" in text
+
+    def test_timing_badge_absent_when_none(self):
+        responses = [
+            OwlResponse(model_name="gpt-5", source="llm", text="Answer"),
+        ]
+        text = self._capture(responses)
+        # Should not contain a timing badge like "(Nones)"
+        assert "None" not in text

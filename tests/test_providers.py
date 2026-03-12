@@ -83,6 +83,64 @@ class TestRegistry:
             get_provider(member)
 
 
+class TestElapsedSeconds:
+    def test_response_stores_elapsed(self):
+        r = OwlResponse(
+            model_name="gpt-5", source="llm", text="Hello", elapsed_seconds=1.5
+        )
+        assert r.elapsed_seconds == 1.5
+
+    def test_response_elapsed_defaults_none(self):
+        r = OwlResponse(model_name="gpt-5", source="llm", text="Hello")
+        assert r.elapsed_seconds is None
+
+
+class TestSystemPromptWiring:
+    """Verify providers accept system_prompt without error."""
+
+    @pytest.fixture(autouse=True)
+    def clear_keys(self, monkeypatch):
+        for key in [
+            "OPENAI_API_KEY",
+            "PERPLEXITY_API_KEY",
+            "GOOGLE_API_KEY",
+            "DEEPSEEK_API_KEY",
+            "XAI_API_KEY",
+        ]:
+            monkeypatch.delenv(key, raising=False)
+
+    @pytest.mark.asyncio
+    async def test_openai_deep_accepts_system_prompt(self):
+        provider = OpenAIDeepProvider("o3-deep-research")
+        # Will fail on missing key, but should not fail on the system_prompt arg
+        response = await provider.query("test", system_prompt="Be helpful")
+        assert response.error == "OPENAI_API_KEY not set"
+
+    @pytest.mark.asyncio
+    async def test_perplexity_accepts_system_prompt(self):
+        provider = PerplexityProvider()
+        response = await provider.query("test", system_prompt="Be helpful")
+        assert response.error == "PERPLEXITY_API_KEY not set"
+
+    @pytest.mark.asyncio
+    async def test_deepseek_accepts_system_prompt(self):
+        provider = DeepSeekProvider()
+        response = await provider.query("test", system_prompt="Be helpful")
+        assert response.error == "DEEPSEEK_API_KEY not set"
+
+    @pytest.mark.asyncio
+    async def test_google_deep_accepts_system_prompt(self):
+        provider = GoogleDeepProvider()
+        response = await provider.query("test", system_prompt="Be helpful")
+        assert response.error == "GOOGLE_API_KEY not set"
+
+    @pytest.mark.asyncio
+    async def test_xai_accepts_system_prompt(self):
+        provider = XAIProvider()
+        response = await provider.query("test", system_prompt="Be helpful")
+        assert response.error == "XAI_API_KEY not set"
+
+
 class TestProvidersMissingKeys:
     """All deep research providers should return error responses when keys are missing."""
 

@@ -62,6 +62,42 @@ class TestCLI:
         assert "gpt-5" in result.output
         assert "sonar-deep-research" in result.output
 
+    def test_ask_with_format_flag(self, runner, monkeypatch):
+        config = Config(council=[CouncilMember("test-model", "llm")])
+        monkeypatch.setattr("owl.cli.main.load_config", lambda: config)
+
+        captured_kwargs = {}
+
+        async def mock_convene(*args, **kwargs):
+            captured_kwargs.update(kwargs)
+            return [OwlResponse(model_name="test-model", source="llm", text="Answer")]
+
+        monkeypatch.setattr("owl.cli.main.convene", mock_convene)
+
+        result = runner.invoke(cli, ["ask", "--format", "brief", "test prompt"])
+        assert result.exit_code == 0
+        from owl.prompts import ResponseFormat
+
+        assert captured_kwargs.get("fmt") == ResponseFormat.BRIEF
+
+    def test_ask_format_default_is_standard(self, runner, monkeypatch):
+        config = Config(council=[CouncilMember("test-model", "llm")])
+        monkeypatch.setattr("owl.cli.main.load_config", lambda: config)
+
+        captured_kwargs = {}
+
+        async def mock_convene(*args, **kwargs):
+            captured_kwargs.update(kwargs)
+            return [OwlResponse(model_name="test-model", source="llm", text="Answer")]
+
+        monkeypatch.setattr("owl.cli.main.convene", mock_convene)
+
+        result = runner.invoke(cli, ["ask", "test prompt"])
+        assert result.exit_code == 0
+        from owl.prompts import ResponseFormat
+
+        assert captured_kwargs.get("fmt") == ResponseFormat.STANDARD
+
     def test_models_empty(self, runner, monkeypatch):
         monkeypatch.setattr("owl.cli.main.discover_all_models", lambda: [])
         result = runner.invoke(cli, ["models"])

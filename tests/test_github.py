@@ -87,3 +87,25 @@ class TestBuildConsolidatedComment:
         combined = "\n".join(bodies)
         assert combined.count("<details>") >= 2
         assert combined.count("</details>") >= 2
+
+    def test_overflow_splits_into_multiple_comments(self):
+        """When responses exceed the char limit, they split into multiple comments."""
+        # Create responses that are large enough to exceed the limit
+        big_text = "x" * 20_000
+        responses = [
+            OwlResponse(model_name=f"model-{i}", source="llm", text=big_text)
+            for i in range(5)
+        ]
+        bodies = _build_consolidated_comment(responses, "test")
+        assert len(bodies) > 1
+        for body in bodies:
+            assert len(body) <= 62_000 + 5_000  # allow some slack for headers/footers
+            assert "Parliament of Owls" in body  # each chunk has footer
+
+    def test_single_comment_when_small(self):
+        """Small responses fit in one comment."""
+        responses = [
+            OwlResponse(model_name="model-a", source="llm", text="Short answer"),
+        ]
+        bodies = _build_consolidated_comment(responses, "test")
+        assert len(bodies) == 1
