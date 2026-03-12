@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import time
 
 import httpx
 
@@ -15,7 +16,7 @@ class XAIProvider(Provider):
     def __init__(self, model_name: str = "grok-agentic"):
         self.model_name = model_name
 
-    async def query(self, prompt: str) -> OwlResponse:
+    async def query(self, prompt: str, system_prompt: str | None = None) -> OwlResponse:
         api_key = os.environ.get("XAI_API_KEY", "")
         if not api_key:
             return OwlResponse(
@@ -26,6 +27,12 @@ class XAIProvider(Provider):
             )
 
         try:
+            t0 = time.monotonic()
+            messages: list[dict[str, str]] = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": prompt})
+
             async with httpx.AsyncClient(timeout=300.0) as client:
                 resp = await client.post(
                     f"{XAI_BASE_URL}/chat/completions",
@@ -35,7 +42,7 @@ class XAIProvider(Provider):
                     },
                     json={
                         "model": "grok-4.1-fast",
-                        "messages": [{"role": "user", "content": prompt}],
+                        "messages": messages,
                         "tools": [
                             {"type": "web_search"},
                             {"type": "x_search"},
@@ -47,11 +54,13 @@ class XAIProvider(Provider):
                 data = resp.json()
 
                 text = data["choices"][0]["message"]["content"]
+                elapsed = time.monotonic() - t0
 
                 return OwlResponse(
                     model_name=self.model_name,
                     source="xai",
                     text=text,
+                    elapsed_seconds=round(elapsed, 1),
                 )
         except Exception as e:
             return OwlResponse(

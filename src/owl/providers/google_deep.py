@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import time
 
 import httpx
 
@@ -19,7 +20,7 @@ class GoogleDeepProvider(Provider):
     def __init__(self, model_name: str = "gemini-deep-research"):
         self.model_name = model_name
 
-    async def query(self, prompt: str) -> OwlResponse:
+    async def query(self, prompt: str, system_prompt: str | None = None) -> OwlResponse:
         api_key = os.environ.get("GOOGLE_API_KEY", "")
         if not api_key:
             return OwlResponse(
@@ -29,7 +30,11 @@ class GoogleDeepProvider(Provider):
                 error="GOOGLE_API_KEY not set",
             )
 
+        # Prepend system instructions to input for Interactions API
+        full_input = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+
         try:
+            t0 = time.monotonic()
             async with httpx.AsyncClient(timeout=30.0) as client:
                 # Start the deep research interaction
                 resp = await client.post(
@@ -38,7 +43,7 @@ class GoogleDeepProvider(Provider):
                     headers={"Content-Type": "application/json"},
                     json={
                         "agent": AGENT_ID,
-                        "input": prompt,
+                        "input": full_input,
                         "background": True,
                         "store": True,
                     },
@@ -72,10 +77,12 @@ class GoogleDeepProvider(Provider):
                         for part in output.get("outputParts", []):
                             if "text" in part:
                                 text_parts.append(part["text"])
+                        elapsed = time.monotonic() - t0
                         return OwlResponse(
                             model_name=self.model_name,
                             source="google-deep",
                             text="\n".join(text_parts) if text_parts else str(output),
+                            elapsed_seconds=round(elapsed, 1),
                         )
 
                 return OwlResponse(

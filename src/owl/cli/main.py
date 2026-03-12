@@ -14,9 +14,16 @@ from ..council import convene
 from ..github import post_responses_to_github
 from ..models import discover_all_models
 from ..output import print_responses
+from ..prompts import ResponseFormat
 from ..tui import run_council_selector
 
 console = Console()
+
+_FORMAT_MAP = {
+    "brief": ResponseFormat.BRIEF,
+    "standard": ResponseFormat.STANDARD,
+    "detailed": ResponseFormat.DETAILED,
+}
 
 
 @click.group()
@@ -38,8 +45,19 @@ def cli() -> None:
 )
 @click.option("--gh", "github_repo", default=None, help="Post to GitHub repo (owner/repo)")
 @click.option("--issue", "issue_number", default=None, type=int, help="Existing issue number")
+@click.option(
+    "--format",
+    "response_format",
+    default="standard",
+    type=click.Choice(["brief", "standard", "detailed"], case_sensitive=False),
+    help="Response length: brief (~150w), standard (~300w), detailed (~800w)",
+)
 def ask(
-    prompt: str | None, file_path: str | None, github_repo: str | None, issue_number: int | None
+    prompt: str | None,
+    file_path: str | None,
+    github_repo: str | None,
+    issue_number: int | None,
+    response_format: str,
 ) -> None:
     """Ask the council a question. Reads from --file, stdin pipe, or argument."""
     if file_path:
@@ -66,9 +84,10 @@ def ask(
         )
         return
 
-    console.print(f"[dim]Querying {len(config.council)} council members...[/dim]")
+    fmt = _FORMAT_MAP[response_format.lower()]
+    console.print(f"[dim]Querying {len(config.council)} council members ({fmt.value})...[/dim]")
 
-    responses = asyncio.run(convene(prompt, config))
+    responses = asyncio.run(convene(prompt, config, fmt=fmt))
     print_responses(responses, console)
 
     if github_repo:
