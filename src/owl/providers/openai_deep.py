@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import time
 
 import httpx
 
@@ -22,7 +23,7 @@ class OpenAIDeepProvider(Provider):
         self.model_name = model_name
         self.api_model = MODEL_MAP.get(model_name, model_name)
 
-    async def query(self, prompt: str) -> OwlResponse:
+    async def query(self, prompt: str, system_prompt: str | None = None) -> OwlResponse:
         api_key = os.environ.get("OPENAI_API_KEY", "")
         if not api_key:
             return OwlResponse(
@@ -33,18 +34,23 @@ class OpenAIDeepProvider(Provider):
             )
 
         try:
+            t0 = time.monotonic()
             async with httpx.AsyncClient(timeout=300.0) as client:
+                payload: dict = {
+                    "model": self.api_model,
+                    "input": prompt,
+                    "tools": [{"type": "web_search"}],
+                }
+                if system_prompt:
+                    payload["instructions"] = system_prompt
+
                 resp = await client.post(
                     f"{OPENAI_BASE_URL}/responses",
                     headers={
                         "Authorization": f"Bearer {api_key}",
                         "Content-Type": "application/json",
                     },
-                    json={
-                        "model": self.api_model,
-                        "input": prompt,
-                        "tools": [{"type": "web_search"}],
-                    },
+                    json=payload,
                 )
                 resp.raise_for_status()
                 data = resp.json()
@@ -57,10 +63,12 @@ class OpenAIDeepProvider(Provider):
                             if content.get("type") == "output_text":
                                 text_parts.append(content.get("text", ""))
 
+                elapsed = time.monotonic() - t0
                 return OwlResponse(
                     model_name=self.model_name,
                     source="openai-deep",
                     text="\n".join(text_parts),
+                    elapsed_seconds=round(elapsed, 1),
                 )
         except Exception as e:
             return OwlResponse(

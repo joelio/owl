@@ -9,6 +9,12 @@ from rich.panel import Panel
 from .providers.base import OwlResponse
 
 
+def _timing_badge(resp: OwlResponse) -> str:
+    if resp.elapsed_seconds is not None:
+        return f" [dim]({resp.elapsed_seconds}s)[/dim]"
+    return ""
+
+
 def print_responses(responses: list[OwlResponse], console: Console | None = None) -> None:
     """Print council responses to terminal with rich formatting."""
     console = console or Console()
@@ -24,7 +30,8 @@ def print_responses(responses: list[OwlResponse], console: Console | None = None
 
     for response in success:
         source_tag = f"[dim]{response.source}[/dim]"
-        title = f"🦉 {response.model_name} {source_tag}"
+        timing = _timing_badge(response)
+        title = f"🦉 {response.model_name} {source_tag}{timing}"
 
         content_parts = []
         if response.reasoning:

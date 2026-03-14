@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import ANY, AsyncMock, patch
 
 import pytest
 
 from owl.config import Config, CouncilMember
 from owl.council import convene, query_member
+from owl.prompts import ResponseFormat
 from owl.providers.base import OwlResponse
 
 
@@ -53,5 +54,39 @@ async def test_query_member_uses_correct_provider():
         result = await query_member(member, "test prompt")
 
     mock_get.assert_called_once_with(member)
-    mock_provider.query.assert_called_once_with("test prompt")
+    mock_provider.query.assert_called_once_with("test prompt", system_prompt=ANY)
     assert result.text == "result"
+
+
+@pytest.mark.asyncio
+async def test_query_member_passes_system_prompt():
+    """Verify system prompts are generated and passed to providers."""
+    member = CouncilMember("test-model", "llm")
+
+    with patch("owl.council.get_provider") as mock_get:
+        mock_provider = AsyncMock()
+        mock_provider.query.return_value = OwlResponse(
+            model_name="test-model", source="llm", text="result"
+        )
+        mock_get.return_value = mock_provider
+
+        await query_member(member, "test prompt", fmt=ResponseFormat.BRIEF)
+
+    # System prompt should be a non-empty string
+    call_args = mock_provider.query.call_args
+    assert call_args.kwargs["system_prompt"]
+    assert "ANSWER" in call_args.kwargs["system_prompt"]
+
+
+@pytest.mark.asyncio
+async def test_convene_passes_format():
+    """Verify format is forwarded to query_member."""
+    config = Config(council=[CouncilMember("model-a", "llm")])
+
+    mock_response = OwlResponse(model_name="model-a", source="llm", text="Response")
+
+    with patch("owl.council.query_member", new_callable=AsyncMock) as mock_qm:
+        mock_qm.return_value = mock_response
+        await convene("test", config, fmt=ResponseFormat.DETAILED)
+
+    mock_qm.assert_called_once_with(ANY, "test", ResponseFormat.DETAILED)
