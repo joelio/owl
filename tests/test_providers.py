@@ -12,6 +12,7 @@ from owl.providers.openai_deep import OpenAIDeepProvider
 from owl.providers.perplexity import PerplexityProvider
 from owl.providers.deepseek import DeepSeekProvider
 from owl.providers.google_deep import GoogleDeepProvider
+from owl.providers.http_base import parse_chat_message
 from owl.providers.xai import XAIProvider
 
 
@@ -299,25 +300,33 @@ class TestGoogleDeepPolling:
         assert resp.error == "No interaction name returned"
 
 
-class TestParseChatMessageGuards:
-    """parse_chat_message must reject malformed shapes without raising raw errors."""
+class TestParseChatMessage:
+    """parse_chat_message is a pure utility — unit-test it directly."""
 
-    @pytest.mark.asyncio
-    async def test_non_dict_choice_is_clean_error(self, httpx_mock, monkeypatch):
-        monkeypatch.setenv("PERPLEXITY_API_KEY", "test-key")
-        monkeypatch.setattr("owl.providers.retry.RETRY_DELAYS", [0.0, 0.0])
-        # choices[0] is a string, not a dict — must not raise AttributeError.
-        httpx_mock.add_response(json={"choices": ["oops"]})
-        resp = await PerplexityProvider().query("q")
-        assert resp.text == ""
-        assert resp.error is not None
-        assert "choice is not a dict" in resp.error
+    def test_extracts_message(self):
+        msg = parse_chat_message({"choices": [{"message": {"content": "hi"}}]})
+        assert msg["content"] == "hi"
 
-    @pytest.mark.asyncio
-    async def test_choices_not_a_list_is_clean_error(self, httpx_mock, monkeypatch):
-        monkeypatch.setenv("PERPLEXITY_API_KEY", "test-key")
-        monkeypatch.setattr("owl.providers.retry.RETRY_DELAYS", [0.0, 0.0])
-        httpx_mock.add_response(json={"choices": "not-a-list"})
-        resp = await PerplexityProvider().query("q")
-        assert resp.text == ""
-        assert "no choices" in resp.error
+    def test_data_not_dict(self):
+        with pytest.raises(ValueError, match="not an object"):
+            parse_chat_message(["not", "a", "dict"])
+
+    def test_choices_not_a_list(self):
+        with pytest.raises(ValueError, match="no choices"):
+            parse_chat_message({"choices": "not-a-list"})
+
+    def test_empty_choices(self):
+        with pytest.raises(ValueError, match="no choices"):
+            parse_chat_message({"choices": []})
+
+    def test_choice_not_a_dict(self):
+        with pytest.raises(ValueError, match="choice is not a dict"):
+            parse_chat_message({"choices": ["oops"]})
+
+    def test_message_not_a_dict(self):
+        with pytest.raises(ValueError, match="no message"):
+            parse_chat_message({"choices": [{"message": "oops"}]})
+
+    def test_missing_content(self):
+        with pytest.raises(ValueError, match="no content"):
+            parse_chat_message({"choices": [{"message": {}}]})

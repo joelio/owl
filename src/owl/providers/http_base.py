@@ -40,6 +40,8 @@ def parse_chat_message(data: dict[str, Any]) -> dict[str, Any]:
     is unexpected, so the caller surfaces a clear error instead of a raw
     ``KeyError``/``IndexError``.
     """
+    if not isinstance(data, dict):
+        raise ValueError(f"unexpected response (not an object): {str(data)[:200]}")
     choices = data.get("choices")
     if not isinstance(choices, list) or not choices:
         raise ValueError(f"unexpected response (no choices): {str(data)[:200]}")
