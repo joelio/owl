@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from owl.github import _build_consolidated_comment, _format_response_section
 from owl.providers.base import OwlResponse
 
@@ -108,3 +110,26 @@ class TestBuildConsolidatedComment:
         ]
         bodies = _build_consolidated_comment(responses, "test")
         assert len(bodies) == 1
+
+
+class TestGitHubTimeouts:
+    """GitHub HTTP calls must set a timeout so they cannot hang forever."""
+
+    @pytest.mark.asyncio
+    async def test_create_issue_sets_timeout(self, httpx_mock, monkeypatch):
+        import owl.github as gh
+
+        captured = {}
+        real_client = gh.httpx.AsyncClient
+
+        def spy(*args, **kwargs):
+            captured["timeout"] = kwargs.get("timeout")
+            return real_client(*args, **kwargs)
+
+        monkeypatch.setattr(gh.httpx, "AsyncClient", spy)
+        monkeypatch.setattr(gh, "_get_token", lambda: "tok")
+        httpx_mock.add_response(json={"number": 7})
+
+        num = await gh.create_issue("o/r", "title", "body")
+        assert num == 7
+        assert captured["timeout"] == 30.0
