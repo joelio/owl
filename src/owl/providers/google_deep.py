@@ -68,19 +68,19 @@ class GoogleDeepProvider(Provider):
                         error="No interaction name returned",
                     )
 
+                async def _poll():
+                    r = await client.get(
+                        f"{GEMINI_BASE_URL}/{interaction_name}",
+                        params={"key": api_key},
+                    )
+                    r.raise_for_status()
+                    return r
+
                 # Poll for completion until the overall wall-clock budget runs out.
                 # Bounding on elapsed time (not just attempt count) keeps the
                 # deadline honest regardless of per-request latency.
                 while time.monotonic() - t0 < MAX_RESEARCH_SECONDS:
                     await asyncio.sleep(POLL_INTERVAL)
-
-                    async def _poll():
-                        r = await client.get(
-                            f"{GEMINI_BASE_URL}/{interaction_name}",
-                            params={"key": api_key},
-                        )
-                        r.raise_for_status()
-                        return r
 
                     # Retry transient poll failures so a blip doesn't discard
                     # research that may already be minutes in progress.

@@ -12,6 +12,7 @@ from owl.providers.openai_deep import OpenAIDeepProvider
 from owl.providers.perplexity import PerplexityProvider
 from owl.providers.deepseek import DeepSeekProvider
 from owl.providers.google_deep import GoogleDeepProvider
+from owl.providers.http_base import parse_chat_message
 from owl.providers.xai import XAIProvider
 
 
@@ -297,3 +298,35 @@ class TestGoogleDeepPolling:
         resp = await GoogleDeepProvider().query("q")
         assert resp.text == ""
         assert resp.error == "No interaction name returned"
+
+
+class TestParseChatMessage:
+    """parse_chat_message is a pure utility — unit-test it directly."""
+
+    def test_extracts_message(self):
+        msg = parse_chat_message({"choices": [{"message": {"content": "hi"}}]})
+        assert msg["content"] == "hi"
+
+    def test_data_not_dict(self):
+        with pytest.raises(ValueError, match="not an object"):
+            parse_chat_message(["not", "a", "dict"])
+
+    def test_choices_not_a_list(self):
+        with pytest.raises(ValueError, match="no choices"):
+            parse_chat_message({"choices": "not-a-list"})
+
+    def test_empty_choices(self):
+        with pytest.raises(ValueError, match="no choices"):
+            parse_chat_message({"choices": []})
+
+    def test_choice_not_a_dict(self):
+        with pytest.raises(ValueError, match="choice is not a dict"):
+            parse_chat_message({"choices": ["oops"]})
+
+    def test_message_not_a_dict(self):
+        with pytest.raises(ValueError, match="no message"):
+            parse_chat_message({"choices": [{"message": "oops"}]})
+
+    def test_missing_content(self):
+        with pytest.raises(ValueError, match="no content"):
+            parse_chat_message({"choices": [{"message": {}}]})
