@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Changed
+- Refactored the HTTP-based providers (OpenAI, Perplexity, DeepSeek, xAI) onto a shared `HttpProvider` base that centralises the API-key check, request/retry/timing flow, response parsing, and error logging. Each provider now only declares its request shape and how to read the reply.
+
+### Added
+- Provider failures are now logged with a stack trace (`logger.exception`) instead of being silently swallowed into an error string.
+- Malformed/unexpected API responses now produce a clear error (with a payload snippet) instead of a raw `KeyError`/`IndexError`.
+
 ### Fixed
 - xAI provider now sends the configured model instead of a hardcoded `grok-4.1-fast`; friendly name `grok-agentic` maps to a real API id, and any other name passes through.
 - Transient failures (429/502/503 and timeouts) are now retried via `with_retry` across all HTTP providers (OpenAI, Perplexity, DeepSeek, xAI, Gemini). The retry helper existed but was never wired in.

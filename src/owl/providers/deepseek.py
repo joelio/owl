@@ -2,73 +2,33 @@
 
 from __future__ import annotations
 
-import os
-import time
+from typing import Any
 
-import httpx
-
-from .base import OwlResponse, Provider
-from .retry import with_retry
+from .http_base import HttpProvider, build_messages, parse_chat_message
 
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 
 
-class DeepSeekProvider(Provider):
+class DeepSeekProvider(HttpProvider):
+    source = "deepseek"
+    api_key_env = "DEEPSEEK_API_KEY"
+
     def __init__(self, model_name: str = "deepseek-reasoner"):
-        self.model_name = model_name
+        super().__init__(model_name)
 
-    async def query(self, prompt: str, system_prompt: str | None = None) -> OwlResponse:
-        api_key = os.environ.get("DEEPSEEK_API_KEY", "")
-        if not api_key:
-            return OwlResponse(
-                model_name=self.model_name,
-                source="deepseek",
-                text="",
-                error="DEEPSEEK_API_KEY not set",
-            )
+    def build_request(self, prompt: str, system_prompt: str | None, api_key: str) -> dict[str, Any]:
+        return {
+            "url": f"{DEEPSEEK_BASE_URL}/chat/completions",
+            "headers": {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            "json": {
+                "model": self.model_name,
+                "messages": build_messages(prompt, system_prompt),
+            },
+        }
 
-        try:
-            t0 = time.monotonic()
-            messages: list[dict[str, str]] = []
-            if system_prompt:
-                messages.append({"role": "system", "content": system_prompt})
-            messages.append({"role": "user", "content": prompt})
-
-            async with httpx.AsyncClient(timeout=300.0) as client:
-
-                async def _do_request():
-                    r = await client.post(
-                        f"{DEEPSEEK_BASE_URL}/chat/completions",
-                        headers={
-                            "Authorization": f"Bearer {api_key}",
-                            "Content-Type": "application/json",
-                        },
-                        json={
-                            "model": self.model_name,
-                            "messages": messages,
-                        },
-                    )
-                    r.raise_for_status()
-                    return r
-
-                resp = await with_retry(_do_request)
-                data = resp.json()
-
-                text = data["choices"][0]["message"]["content"]
-                reasoning = data["choices"][0]["message"].get("reasoning_content")
-                elapsed = time.monotonic() - t0
-
-                return OwlResponse(
-                    model_name=self.model_name,
-                    source="deepseek",
-                    text=text,
-                    reasoning=reasoning,
-                    elapsed_seconds=round(elapsed, 1),
-                )
-        except Exception as e:
-            return OwlResponse(
-                model_name=self.model_name,
-                source="deepseek",
-                text="",
-                error=str(e),
-            )
+    def parse_response(self, data: dict[str, Any]) -> dict[str, Any]:
+        message = parse_chat_message(data)
+        return {"text": message["content"], "reasoning": message.get("reasoning_content")}

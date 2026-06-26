@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import time
 
@@ -10,6 +11,8 @@ import httpx
 
 from .base import OwlResponse, Provider
 from .retry import with_retry
+
+logger = logging.getLogger(__name__)
 
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 AGENT_ID = "deep-research-pro-preview-12-2025"
@@ -97,6 +100,7 @@ class GoogleDeepProvider(Provider):
                     error="Deep research timed out after polling",
                 )
         except Exception as e:
+            logger.exception("google-deep provider (%s) failed", self.model_name)
             return OwlResponse(
                 model_name=self.model_name,
                 source="google-deep",

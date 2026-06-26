@@ -231,3 +231,42 @@ class TestProviderRetry:
         assert resp.error is None
         assert resp.text == "ok"
         assert len(httpx_mock.get_requests()) == 2
+
+
+class TestSafeParsing:
+    """Malformed API responses must yield a clean error, not a crash."""
+
+    @pytest.fixture(autouse=True)
+    def fast_retry(self, monkeypatch):
+        monkeypatch.setattr("owl.providers.retry.RETRY_DELAYS", [0.0, 0.0])
+
+    @pytest.mark.asyncio
+    async def test_perplexity_malformed_response_is_error(self, httpx_mock, monkeypatch):
+        monkeypatch.setenv("PERPLEXITY_API_KEY", "test-key")
+        httpx_mock.add_response(json={"unexpected": "shape"})
+        resp = await PerplexityProvider().query("q")
+        assert resp.text == ""
+        assert resp.error is not None
+        assert "unexpected response" in resp.error
+
+    @pytest.mark.asyncio
+    async def test_deepseek_extracts_reasoning(self, httpx_mock, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+        httpx_mock.add_response(
+            json={"choices": [{"message": {"content": "answer", "reasoning_content": "because"}}]}
+        )
+        resp = await DeepSeekProvider().query("q")
+        assert resp.text == "answer"
+        assert resp.reasoning == "because"
+
+    @pytest.mark.asyncio
+    async def test_perplexity_extracts_citations(self, httpx_mock, monkeypatch):
+        monkeypatch.setenv("PERPLEXITY_API_KEY", "test-key")
+        httpx_mock.add_response(
+            json={
+                "choices": [{"message": {"content": "answer"}}],
+                "citations": ["https://a.example", "https://b.example"],
+            }
+        )
+        resp = await PerplexityProvider().query("q")
+        assert resp.citations == ["https://a.example", "https://b.example"]
