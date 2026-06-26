@@ -270,3 +270,30 @@ class TestSafeParsing:
         )
         resp = await PerplexityProvider().query("q")
         assert resp.citations == ["https://a.example", "https://b.example"]
+
+
+class TestGoogleDeepPolling:
+    """Gemini provider starts an interaction then polls to completion."""
+
+    @pytest.fixture(autouse=True)
+    def fast_poll(self, monkeypatch):
+        monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
+        monkeypatch.setattr("owl.providers.google_deep.POLL_INTERVAL", 0)
+        monkeypatch.setattr("owl.providers.retry.RETRY_DELAYS", [0.0, 0.0])
+
+    @pytest.mark.asyncio
+    async def test_completes_after_polling(self, httpx_mock):
+        httpx_mock.add_response(json={"name": "interactions/abc"})  # start
+        httpx_mock.add_response(
+            json={"done": True, "response": {"outputParts": [{"text": "the report"}]}}
+        )  # poll -> done
+        resp = await GoogleDeepProvider().query("q")
+        assert resp.error is None
+        assert resp.text == "the report"
+
+    @pytest.mark.asyncio
+    async def test_missing_interaction_name_is_error(self, httpx_mock):
+        httpx_mock.add_response(json={})  # start returns no name
+        resp = await GoogleDeepProvider().query("q")
+        assert resp.text == ""
+        assert resp.error == "No interaction name returned"
