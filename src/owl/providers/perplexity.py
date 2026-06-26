@@ -8,6 +8,7 @@ import time
 import httpx
 
 from .base import OwlResponse, Provider
+from .retry import with_retry
 
 PERPLEXITY_BASE_URL = "https://api.perplexity.ai"
 
@@ -34,18 +35,23 @@ class PerplexityProvider(Provider):
             messages.append({"role": "user", "content": prompt})
 
             async with httpx.AsyncClient(timeout=300.0) as client:
-                resp = await client.post(
-                    f"{PERPLEXITY_BASE_URL}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": self.model_name,
-                        "messages": messages,
-                    },
-                )
-                resp.raise_for_status()
+
+                async def _do_request():
+                    r = await client.post(
+                        f"{PERPLEXITY_BASE_URL}/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": self.model_name,
+                            "messages": messages,
+                        },
+                    )
+                    r.raise_for_status()
+                    return r
+
+                resp = await with_retry(_do_request)
                 data = resp.json()
 
                 text = data["choices"][0]["message"]["content"]

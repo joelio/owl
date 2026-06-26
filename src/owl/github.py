@@ -123,7 +123,7 @@ async def create_issue(repo: str, title: str, body: str, token: str | None = Non
     if not token:
         raise RuntimeError("No GitHub token available. Set GITHUB_TOKEN or install gh CLI.")
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.post(
             f"{GITHUB_API}/repos/{repo}/issues",
             headers={
@@ -142,7 +142,7 @@ async def post_comment(repo: str, issue_number: int, body: str, token: str | Non
     if not token:
         raise RuntimeError("No GitHub token available. Set GITHUB_TOKEN or install gh CLI.")
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.post(
             f"{GITHUB_API}/repos/{repo}/issues/{issue_number}/comments",
             headers={

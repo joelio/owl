@@ -9,6 +9,7 @@ import time
 import httpx
 
 from .base import OwlResponse, Provider
+from .retry import with_retry
 
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 AGENT_ID = "deep-research-pro-preview-12-2025"
@@ -37,18 +38,22 @@ class GoogleDeepProvider(Provider):
             t0 = time.monotonic()
             async with httpx.AsyncClient(timeout=30.0) as client:
                 # Start the deep research interaction
-                resp = await client.post(
-                    f"{GEMINI_BASE_URL}/interactions",
-                    params={"key": api_key},
-                    headers={"Content-Type": "application/json"},
-                    json={
-                        "agent": AGENT_ID,
-                        "input": full_input,
-                        "background": True,
-                        "store": True,
-                    },
-                )
-                resp.raise_for_status()
+                async def _start_interaction():
+                    r = await client.post(
+                        f"{GEMINI_BASE_URL}/interactions",
+                        params={"key": api_key},
+                        headers={"Content-Type": "application/json"},
+                        json={
+                            "agent": AGENT_ID,
+                            "input": full_input,
+                            "background": True,
+                            "store": True,
+                        },
+                    )
+                    r.raise_for_status()
+                    return r
+
+                resp = await with_retry(_start_interaction)
                 interaction = resp.json()
                 interaction_name = interaction.get("name", "")
 

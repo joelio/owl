@@ -8,13 +8,21 @@ import time
 import httpx
 
 from .base import OwlResponse, Provider
+from .retry import with_retry
 
 XAI_BASE_URL = "https://api.x.ai/v1"
+
+# Map owl's friendly model names to xAI API model ids.
+# Unknown names pass through unchanged so real API ids can be used directly.
+MODEL_MAP = {
+    "grok-agentic": "grok-4.1-fast",
+}
 
 
 class XAIProvider(Provider):
     def __init__(self, model_name: str = "grok-agentic"):
         self.model_name = model_name
+        self.api_model = MODEL_MAP.get(model_name, model_name)
 
     async def query(self, prompt: str, system_prompt: str | None = None) -> OwlResponse:
         api_key = os.environ.get("XAI_API_KEY", "")
@@ -34,23 +42,28 @@ class XAIProvider(Provider):
             messages.append({"role": "user", "content": prompt})
 
             async with httpx.AsyncClient(timeout=300.0) as client:
-                resp = await client.post(
-                    f"{XAI_BASE_URL}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": "grok-4.1-fast",
-                        "messages": messages,
-                        "tools": [
-                            {"type": "web_search"},
-                            {"type": "x_search"},
-                        ],
-                        "chain_limit": 10,
-                    },
-                )
-                resp.raise_for_status()
+
+                async def _do_request():
+                    r = await client.post(
+                        f"{XAI_BASE_URL}/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": self.api_model,
+                            "messages": messages,
+                            "tools": [
+                                {"type": "web_search"},
+                                {"type": "x_search"},
+                            ],
+                            "chain_limit": 10,
+                        },
+                    )
+                    r.raise_for_status()
+                    return r
+
+                resp = await with_retry(_do_request)
                 data = resp.json()
 
                 text = data["choices"][0]["message"]["content"]

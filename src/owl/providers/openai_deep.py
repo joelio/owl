@@ -8,6 +8,7 @@ import time
 import httpx
 
 from .base import OwlResponse, Provider
+from .retry import with_retry
 
 OPENAI_BASE_URL = "https://api.openai.com/v1"
 
@@ -44,15 +45,19 @@ class OpenAIDeepProvider(Provider):
                 if system_prompt:
                     payload["instructions"] = system_prompt
 
-                resp = await client.post(
-                    f"{OPENAI_BASE_URL}/responses",
-                    headers={
-                        "Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json=payload,
-                )
-                resp.raise_for_status()
+                async def _do_request():
+                    r = await client.post(
+                        f"{OPENAI_BASE_URL}/responses",
+                        headers={
+                            "Authorization": f"Bearer {api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json=payload,
+                    )
+                    r.raise_for_status()
+                    return r
+
+                resp = await with_retry(_do_request)
                 data = resp.json()
 
                 # Extract text from response output

@@ -182,3 +182,52 @@ class TestProvidersMissingKeys:
         provider = XAIProvider()
         response = await provider.query("test")
         assert response.error == "XAI_API_KEY not set"
+
+
+class TestXAIModelName:
+    """The xAI provider must send the configured model, not a hardcoded one."""
+
+    @pytest.fixture(autouse=True)
+    def set_key(self, monkeypatch):
+        monkeypatch.setenv("XAI_API_KEY", "test-key")
+
+    @pytest.mark.asyncio
+    async def test_default_model_maps_to_api_id(self, httpx_mock):
+        httpx_mock.add_response(json={"choices": [{"message": {"content": "hi"}}]})
+        provider = XAIProvider()  # grok-agentic
+        resp = await provider.query("q")
+        assert resp.text == "hi"
+        import json
+
+        body = json.loads(httpx_mock.get_request().content)
+        assert body["model"] == "grok-4.1-fast"
+
+    @pytest.mark.asyncio
+    async def test_custom_model_is_passed_through(self, httpx_mock):
+        httpx_mock.add_response(json={"choices": [{"message": {"content": "hi"}}]})
+        provider = XAIProvider("grok-4.3")
+        await provider.query("q")
+        import json
+
+        body = json.loads(httpx_mock.get_request().content)
+        assert body["model"] == "grok-4.3"
+
+
+class TestProviderRetry:
+    """Providers must retry transient failures via with_retry."""
+
+    @pytest.fixture(autouse=True)
+    def fast_retry(self, monkeypatch):
+        # Avoid real 2s/5s sleeps during the test.
+        monkeypatch.setattr("owl.providers.retry.RETRY_DELAYS", [0.0, 0.0])
+
+    @pytest.mark.asyncio
+    async def test_perplexity_retries_on_429(self, httpx_mock, monkeypatch):
+        monkeypatch.setenv("PERPLEXITY_API_KEY", "test-key")
+        httpx_mock.add_response(status_code=429)
+        httpx_mock.add_response(json={"choices": [{"message": {"content": "ok"}}]})
+        provider = PerplexityProvider()
+        resp = await provider.query("q")
+        assert resp.error is None
+        assert resp.text == "ok"
+        assert len(httpx_mock.get_requests()) == 2
