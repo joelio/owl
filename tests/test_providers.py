@@ -297,3 +297,27 @@ class TestGoogleDeepPolling:
         resp = await GoogleDeepProvider().query("q")
         assert resp.text == ""
         assert resp.error == "No interaction name returned"
+
+
+class TestParseChatMessageGuards:
+    """parse_chat_message must reject malformed shapes without raising raw errors."""
+
+    @pytest.mark.asyncio
+    async def test_non_dict_choice_is_clean_error(self, httpx_mock, monkeypatch):
+        monkeypatch.setenv("PERPLEXITY_API_KEY", "test-key")
+        monkeypatch.setattr("owl.providers.retry.RETRY_DELAYS", [0.0, 0.0])
+        # choices[0] is a string, not a dict — must not raise AttributeError.
+        httpx_mock.add_response(json={"choices": ["oops"]})
+        resp = await PerplexityProvider().query("q")
+        assert resp.text == ""
+        assert resp.error is not None
+        assert "choice is not a dict" in resp.error
+
+    @pytest.mark.asyncio
+    async def test_choices_not_a_list_is_clean_error(self, httpx_mock, monkeypatch):
+        monkeypatch.setenv("PERPLEXITY_API_KEY", "test-key")
+        monkeypatch.setattr("owl.providers.retry.RETRY_DELAYS", [0.0, 0.0])
+        httpx_mock.add_response(json={"choices": "not-a-list"})
+        resp = await PerplexityProvider().query("q")
+        assert resp.text == ""
+        assert "no choices" in resp.error

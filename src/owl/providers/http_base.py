@@ -41,9 +41,12 @@ def parse_chat_message(data: dict[str, Any]) -> dict[str, Any]:
     ``KeyError``/``IndexError``.
     """
     choices = data.get("choices")
-    if not choices:
+    if not isinstance(choices, list) or not choices:
         raise ValueError(f"unexpected response (no choices): {str(data)[:200]}")
-    message = choices[0].get("message")
+    first_choice = choices[0]
+    if not isinstance(first_choice, dict):
+        raise ValueError(f"unexpected response (choice is not a dict): {str(data)[:200]}")
+    message = first_choice.get("message")
     if not isinstance(message, dict):
         raise ValueError(f"unexpected response (no message): {str(data)[:200]}")
     if message.get("content") is None:
