@@ -68,9 +68,6 @@ class HttpProvider(Provider):
     api_key_env: str = ""
     timeout: float = 300.0
 
-    def __init__(self, model_name: str):
-        self.model_name = model_name
-
     def build_request(self, prompt: str, system_prompt: str | None, api_key: str) -> dict[str, Any]:
         """Return kwargs passed straight to ``client.post`` (url, headers, json...)."""
         raise NotImplementedError

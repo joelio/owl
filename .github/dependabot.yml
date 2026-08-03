@@ -1,0 +1,20 @@
+version: 2
+updates:
+  # ruff is pinned to a compatible release because its default rules and
+  # formatter output move between minor versions. Dependabot proposing that
+  # bump as a reviewable PR is the point: it lands deliberately, with CI, not
+  # by surprise on whatever a fresh install happens to resolve.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      python-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

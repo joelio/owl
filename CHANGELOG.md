@@ -17,6 +17,9 @@
   - **Gemini**: the poll loop waited for a `done` boolean and read text from `response.outputParts[]`. Interactions actually report a `status` string and carry text in `steps[].content[].text`, so a completed research run would never have been recognised. Terminal failure statuses are now surfaced as errors with the reason instead of being polled until timeout.
 
 ### Changed
+- CI runs mypy. The package ships `py.typed`, advertising itself as typed, with nothing checking that claim. The first run found a real gap: `Provider` never declared `model_name`, though the registry builds every provider as `cls(model_name=...)`, so that call was unverifiable. It is declared on the base class now.
+- CI adds Python 3.14, caches pip downloads, and sets `fail-fast: false` so one version failing no longer hides the others.
+- Added `.github/dependabot.yml`, monthly, for pip and GitHub Actions. `ruff` is deliberately pinned, so a proposed bump should arrive as a reviewable PR with CI rather than by surprise on whatever a fresh install resolves.
 - Retries now honour a `Retry-After` header when the server sends one, cover 500 and 504 alongside 429/502/503, and retry dropped connections (`ConnectError`, `ReadError`, `WriteError`, `RemoteProtocolError`) rather than only timeouts. Backoff is jittered so a whole council rate-limited at once does not march back in lockstep, and an absurd `Retry-After` is ignored rather than stalling the query.
 - The test suite no longer sleeps through real backoff: 197 tests run in under a second, down from 178 in 16.5 seconds.
 - Provider request shapes are now pinned by contract tests, so a rename or endpoint change fails a test rather than silently returning nothing.

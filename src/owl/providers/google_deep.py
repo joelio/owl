@@ -52,7 +52,7 @@ def _failure_reason(result: dict) -> str:
 
 class GoogleDeepProvider(Provider):
     def __init__(self, model_name: str = "gemini-deep-research"):
-        self.model_name = model_name
+        super().__init__(model_name)
 
     async def query(self, prompt: str, system_prompt: str | None = None) -> OwlResponse:
         api_key = os.environ.get("GOOGLE_API_KEY", "")
