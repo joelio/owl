@@ -8,6 +8,7 @@ import logging
 from .config import Config, CouncilMember, load_config
 from .prompts import ResponseFormat, get_system_prompt
 from .providers.base import OwlResponse
+from .providers.errors import describe_error
 from .providers.registry import get_provider
 
 logger = logging.getLogger(__name__)
@@ -30,7 +31,7 @@ async def query_member(
             model_name=member.name,
             source=member.source,
             text="",
-            error=str(e),
+            error=describe_error(e),
         )
 
 

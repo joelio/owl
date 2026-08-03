@@ -19,6 +19,7 @@ from typing import Any
 import httpx
 
 from .base import OwlResponse, Provider
+from .errors import describe_error
 from .retry import with_retry
 
 logger = logging.getLogger(__name__)
@@ -116,5 +117,5 @@ class HttpProvider(Provider):
                 model_name=self.model_name,
                 source=self.source,
                 text="",
-                error=str(e),
+                error=describe_error(e),
             )

@@ -7,6 +7,8 @@ import logging
 from collections.abc import Callable, Coroutine
 from typing import TypeVar
 
+from .errors import redact
+
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
@@ -30,7 +32,7 @@ async def with_retry(
                 delay = RETRY_DELAYS[attempt]
                 logger.info(
                     "Retrying %s after %ss (status %s)",
-                    e.request.url,
+                    redact(str(e.request.url)),
                     delay,
                     e.response.status_code,
                 )

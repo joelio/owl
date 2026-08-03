@@ -10,6 +10,7 @@ import time
 import httpx
 
 from .base import OwlResponse, Provider
+from .errors import describe_error
 from .retry import with_retry
 
 logger = logging.getLogger(__name__)
@@ -39,12 +40,18 @@ class GoogleDeepProvider(Provider):
 
         try:
             t0 = time.monotonic()
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            # Authenticate with the x-goog-api-key header rather than a ?key=
+            # query parameter.  Google recommends the header precisely because
+            # a key in the URL leaks into logs and error messages, and httpx
+            # embeds the full URL in str(HTTPStatusError).
+            # https://ai.google.dev/gemini-api/docs/api-key
+            async with httpx.AsyncClient(
+                timeout=30.0, headers={"x-goog-api-key": api_key}
+            ) as client:
                 # Start the deep research interaction
                 async def _start_interaction():
                     r = await client.post(
                         f"{GEMINI_BASE_URL}/interactions",
-                        params={"key": api_key},
                         headers={"Content-Type": "application/json"},
                         json={
                             "agent": AGENT_ID,
@@ -69,10 +76,7 @@ class GoogleDeepProvider(Provider):
                     )
 
                 async def _poll():
-                    r = await client.get(
-                        f"{GEMINI_BASE_URL}/{interaction_name}",
-                        params={"key": api_key},
-                    )
+                    r = await client.get(f"{GEMINI_BASE_URL}/{interaction_name}")
                     r.raise_for_status()
                     return r
 
@@ -114,5 +118,5 @@ class GoogleDeepProvider(Provider):
                 model_name=self.model_name,
                 source="google-deep",
                 text="",
-                error=str(e),
+                error=describe_error(e),
             )
