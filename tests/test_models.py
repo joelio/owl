@@ -59,3 +59,16 @@ class TestLlmModels:
         monkeypatch.setattr(builtins, "__import__", mock_import)
         result = discover_llm_models()
         assert result == []
+
+
+class TestCatalogueMatchesProviders:
+    """Every model named in the docs must be discoverable, not just accepted."""
+
+    def test_both_deepseek_tiers_are_discoverable(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "k")
+        names = {m.name for m in discover_deep_research_models() if m.source == "deepseek"}
+        assert names == {"deepseek-v4-flash", "deepseek-v4-pro"}
+
+    def test_no_retired_model_names_in_catalogue(self):
+        retired = {"deepseek-reasoner", "deepseek-chat", "grok-4.1-fast"}
+        assert not {m.name for m in DEEP_RESEARCH_MODELS} & retired

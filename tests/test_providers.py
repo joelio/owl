@@ -192,20 +192,23 @@ class TestXAIModelName:
     def set_key(self, monkeypatch):
         monkeypatch.setenv("XAI_API_KEY", "test-key")
 
+    def _reply(self, text="hi"):
+        return {"output": [{"type": "message", "content": [{"type": "output_text", "text": text}]}]}
+
     @pytest.mark.asyncio
     async def test_default_model_maps_to_api_id(self, httpx_mock):
-        httpx_mock.add_response(json={"choices": [{"message": {"content": "hi"}}]})
+        httpx_mock.add_response(json=self._reply())
         provider = XAIProvider()  # grok-agentic
         resp = await provider.query("q")
         assert resp.text == "hi"
         import json
 
         body = json.loads(httpx_mock.get_request().content)
-        assert body["model"] == "grok-4.1-fast"
+        assert body["model"] == "grok-4.5"
 
     @pytest.mark.asyncio
     async def test_custom_model_is_passed_through(self, httpx_mock):
-        httpx_mock.add_response(json={"choices": [{"message": {"content": "hi"}}]})
+        httpx_mock.add_response(json=self._reply())
         provider = XAIProvider("grok-4.3")
         await provider.query("q")
         import json
@@ -286,8 +289,13 @@ class TestGoogleDeepPolling:
     async def test_completes_after_polling(self, httpx_mock):
         httpx_mock.add_response(json={"name": "interactions/abc"})  # start
         httpx_mock.add_response(
-            json={"done": True, "response": {"outputParts": [{"text": "the report"}]}}
-        )  # poll -> done
+            json={
+                "status": "completed",
+                "steps": [
+                    {"type": "model_output", "content": [{"type": "text", "text": "the report"}]}
+                ],
+            }
+        )  # poll -> completed
         resp = await GoogleDeepProvider().query("q")
         assert resp.error is None
         assert resp.text == "the report"
@@ -349,7 +357,12 @@ class TestGoogleDeepAuth:
     async def test_key_sent_as_header_not_query_param(self, httpx_mock):
         httpx_mock.add_response(json={"name": "interactions/abc"})
         httpx_mock.add_response(
-            json={"done": True, "response": {"outputParts": [{"text": "report"}]}}
+            json={
+                "status": "completed",
+                "steps": [
+                    {"type": "model_output", "content": [{"type": "text", "text": "report"}]}
+                ],
+            }
         )
 
         await GoogleDeepProvider().query("q")
@@ -447,3 +460,121 @@ class TestOpenAIDeepResearch:
         resp = await OpenAIDeepProvider("o3-deep-research").query("q")
 
         assert "no id" in (resp.error or "")
+
+
+class TestDeepSeekContract:
+    """The legacy deepseek-chat / deepseek-reasoner names were discontinued
+    on 2026-07-24; V4 needs thinking enabled explicitly."""
+
+    def test_default_model_is_current(self):
+        request = DeepSeekProvider().build_request("q", None, "k")
+        assert request["json"]["model"] == "deepseek-v4-flash"
+
+    def test_legacy_reasoner_name_is_remapped(self):
+        request = DeepSeekProvider("deepseek-reasoner").build_request("q", None, "k")
+        assert request["json"]["model"] == "deepseek-v4-flash"
+
+    def test_thinking_is_enabled(self):
+        request = DeepSeekProvider().build_request("q", None, "k")
+        assert request["json"]["thinking"] == {"type": "enabled"}
+
+    def test_unknown_model_passes_through(self):
+        request = DeepSeekProvider("deepseek-v4-pro").build_request("q", None, "k")
+        assert request["json"]["model"] == "deepseek-v4-pro"
+
+
+class TestXAIContract:
+    """Chat Completions is a deprecated endpoint supporting function calling
+    only; server-side web/X search is native to the Responses API."""
+
+    def test_uses_the_responses_endpoint(self):
+        request = XAIProvider().build_request("q", None, "k")
+        assert request["url"] == "https://api.x.ai/v1/responses"
+
+    def test_friendly_name_maps_to_a_real_model(self):
+        request = XAIProvider("grok-agentic").build_request("q", None, "k")
+        assert request["json"]["model"] == "grok-4.5"
+
+    def test_sends_responses_style_input_not_messages(self):
+        payload = XAIProvider().build_request("q", None, "k")["json"]
+        assert payload["input"] == [{"role": "user", "content": "q"}]
+        assert "messages" not in payload
+
+    def test_no_chain_limit_parameter(self):
+        # chain_limit is not an xAI parameter and never was.
+        assert "chain_limit" not in XAIProvider().build_request("q", None, "k")["json"]
+
+    def test_system_prompt_becomes_instructions(self):
+        payload = XAIProvider().build_request("q", "be terse", "k")["json"]
+        assert payload["instructions"] == "be terse"
+
+    def test_parses_responses_output(self):
+        parsed = XAIProvider().parse_response(
+            {
+                "output": [
+                    {
+                        "type": "message",
+                        "content": [{"type": "output_text", "text": "the answer"}],
+                    }
+                ]
+            }
+        )
+        assert parsed["text"] == "the answer"
+
+
+class TestGoogleDeepResponseShape:
+    """Interactions report a `status` string, not a `done` boolean, and the
+    text lives in steps[].content[].text."""
+
+    @pytest.fixture(autouse=True)
+    def fast_poll(self, monkeypatch):
+        monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
+        monkeypatch.setattr("owl.providers.google_deep.POLL_INTERVAL", 0)
+        monkeypatch.setattr("owl.providers.retry.RETRY_DELAYS", [0.0, 0.0])
+
+    def test_extract_text_reads_steps(self):
+        from owl.providers.google_deep import extract_text
+
+        result = {
+            "status": "completed",
+            "steps": [
+                {"type": "model_output", "content": [{"type": "text", "text": "part one"}]},
+                {"type": "model_output", "content": [{"type": "text", "text": "part two"}]},
+            ],
+        }
+        assert extract_text(result) == "part one\npart two"
+
+    def test_extract_text_ignores_non_text_content(self):
+        from owl.providers.google_deep import extract_text
+
+        result = {"steps": [{"content": [{"type": "reasoning"}, {"type": "text", "text": "keep"}]}]}
+        assert extract_text(result) == "keep"
+
+    @pytest.mark.asyncio
+    async def test_completed_status_returns_the_report(self, httpx_mock):
+        httpx_mock.add_response(json={"name": "interactions/abc"})
+        httpx_mock.add_response(json={"status": "in_progress"})
+        httpx_mock.add_response(
+            json={
+                "status": "completed",
+                "steps": [
+                    {"type": "model_output", "content": [{"type": "text", "text": "the report"}]}
+                ],
+            }
+        )
+
+        resp = await GoogleDeepProvider().query("q")
+
+        assert resp.error is None
+        assert resp.text == "the report"
+
+    @pytest.mark.asyncio
+    async def test_failed_status_is_an_error(self, httpx_mock):
+        httpx_mock.add_response(json={"name": "interactions/abc"})
+        httpx_mock.add_response(json={"status": "failed", "error": {"message": "quota exhausted"}})
+
+        resp = await GoogleDeepProvider().query("q")
+
+        assert resp.text == ""
+        assert "failed" in (resp.error or "")
+        assert "quota exhausted" in (resp.error or "")

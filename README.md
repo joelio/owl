@@ -128,7 +128,7 @@ Deep research models use direct API calls (not `llm` plugins). Set their keys as
 export OPENAI_API_KEY=sk-...        # o3-deep-research, o4-mini-deep-research
 export PERPLEXITY_API_KEY=pplx-...  # sonar-deep-research
 export GOOGLE_API_KEY=AI...         # Gemini Deep Research Agent
-export DEEPSEEK_API_KEY=sk-...      # deepseek-reasoner
+export DEEPSEEK_API_KEY=sk-...      # deepseek-v4-flash
 export XAI_API_KEY=xai-...          # Grok agentic search
 ```
 
@@ -196,8 +196,8 @@ Run `owl council` to open the interactive selector:
  4  ☑ o3-deep-research          openai-deep   OpenAI Deep Research
  5  ☑ sonar-deep-research       perplexity    Perplexity Deep Research
  6  ☐ gemini-deep-research      google-deep   Gemini Deep Research Agent
- 7  ☐ deepseek-reasoner         deepseek      DeepSeek Reasoner
- 8  ☐ grok-agentic              xai           Grok 4.1 agentic search
+ 7  ☐ deepseek-v4-flash         deepseek      DeepSeek V4 Flash (thinking)
+ 8  ☐ grok-agentic              xai           Grok 4.5 agentic search
 
 Enter number to toggle, a=all, n=none, s=save, q=quit:
 ```
@@ -213,8 +213,8 @@ Each provider implements deep research differently:
 | **OpenAI** | Separate model (`o3-deep-research`) that searches the web and synthesises reports. Runs as a background job that owl polls to completion | Responses API |
 | **Perplexity** | Separate model (`sonar-deep-research`) with multi-step retrieval and citations | `/chat/completions` |
 | **Google Gemini** | Async agent that plans, searches, reads, and reasons (can take minutes) | Interactions API |
-| **DeepSeek** | Reasoning model with chain-of-thought (`deepseek-reasoner`) | `/chat/completions` |
-| **xAI Grok** | Grok 4.1 with agentic web + X search and thinking mode | Chat Completions + tools |
+| **DeepSeek** | V4 Flash with thinking mode enabled (`deepseek-v4-flash`) | `/chat/completions` |
+| **xAI Grok** | Grok 4.5 with agentic web and X search | Responses API + server-side tools |
 
 ## Security
 

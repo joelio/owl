@@ -56,8 +56,8 @@ No API keys in config. Standard models use `llm keys set`; deep research APIs us
 | `openai-deep` | `o3-deep-research`, `o4-mini-deep-research` | `OPENAI_API_KEY` |
 | `perplexity` | `sonar-deep-research` | `PERPLEXITY_API_KEY` |
 | `google-deep` | `gemini-deep-research` | `GOOGLE_API_KEY` |
-| `deepseek` | `deepseek-reasoner` | `DEEPSEEK_API_KEY` |
-| `xai` | `grok-agentic` | `XAI_API_KEY` |
+| `deepseek` | `deepseek-v4-flash`, `deepseek-v4-pro` | `DEEPSEEK_API_KEY` |
+| `xai` | `grok-agentic` (maps to `grok-4.5`) | `XAI_API_KEY` |
 
 Deep research models only appear in `owl models` when their API key env var is set.
 
@@ -80,7 +80,7 @@ src/owl/
     perplexity.py    # Perplexity Chat Completions
     google_deep.py   # Gemini Interactions API (async polling)
     deepseek.py      # DeepSeek Chat Completions
-    xai.py           # xAI Chat Completions + Agent Tools
+    xai.py           # xAI Responses API + server-side search tools
     retry.py         # Auto-retry on 429/502/503 (2 retries, 2s/5s delays)
     errors.py        # Credential-safe error text (redaction + response body)
 ```
