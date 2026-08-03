@@ -47,6 +47,12 @@ DEEP_RESEARCH_MODELS = [
         description="DeepSeek V4 Flash (thinking mode)",
     ),
     AvailableModel(
+        name="deepseek-v4-pro",
+        source="deepseek",
+        category="deep-research",
+        description="DeepSeek V4 Pro (frontier tier, thinking mode)",
+    ),
+    AvailableModel(
         name="grok-agentic",
         source="xai",
         category="deep-research",
