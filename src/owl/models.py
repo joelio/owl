@@ -38,19 +38,19 @@ DEEP_RESEARCH_MODELS = [
         name="gemini-deep-research",
         source="google-deep",
         category="deep-research",
-        description="Gemini Deep Research Agent (async, Interactions API)",
+        description="Gemini Deep Research agent (Interactions API, polled)",
     ),
     AvailableModel(
-        name="deepseek-reasoner",
+        name="deepseek-v4-flash",
         source="deepseek",
         category="deep-research",
-        description="DeepSeek Reasoner (chain-of-thought reasoning)",
+        description="DeepSeek V4 Flash (thinking mode)",
     ),
     AvailableModel(
         name="grok-agentic",
         source="xai",
         category="deep-research",
-        description="Grok 4.1 agentic search + thinking mode",
+        description="Grok 4.5 agentic web + X search",
     ),
 ]
 

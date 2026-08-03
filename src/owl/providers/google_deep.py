@@ -16,9 +16,38 @@ from .retry import with_retry
 logger = logging.getLogger(__name__)
 
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
+
+# Newer agents also exist: deep-research-preview-04-2026 and
+# deep-research-max-preview-04-2026.  This one remains listed as valid.
+# https://ai.google.dev/api/interactions-api
 AGENT_ID = "deep-research-pro-preview-12-2025"
+
 POLL_INTERVAL = 5  # seconds between polls
 MAX_RESEARCH_SECONDS = 600  # overall wall-clock budget for the interaction (10 min)
+
+# The interaction reports progress through a `status` string, not a `done`
+# boolean, and the generated text lives in `steps[].content[].text`.
+_FAILED_STATUSES = frozenset({"failed", "cancelled", "incomplete", "budget_exceeded"})
+
+
+def extract_text(result: dict) -> str:
+    """Pull the model output out of a completed interaction."""
+    text_parts: list[str] = []
+    for step in result.get("steps", []):
+        if not isinstance(step, dict):
+            continue
+        for item in step.get("content", []):
+            if isinstance(item, dict) and item.get("type") == "text" and item.get("text"):
+                text_parts.append(str(item["text"]))
+    return "\n".join(text_parts)
+
+
+def _failure_reason(result: dict) -> str:
+    """Best-effort reason for an interaction that did not complete."""
+    error = result.get("error")
+    if isinstance(error, dict) and error.get("message"):
+        return str(error["message"])
+    return "no reason given"
 
 
 class GoogleDeepProvider(Provider):
@@ -90,19 +119,22 @@ class GoogleDeepProvider(Provider):
                     # research that may already be minutes in progress.
                     poll_resp = await with_retry(_poll)
                     result = poll_resp.json()
+                    status = result.get("status")
 
-                    if result.get("done", False):
-                        # Extract the response text
-                        output = result.get("response", {})
-                        text_parts = []
-                        for part in output.get("outputParts", []):
-                            if "text" in part:
-                                text_parts.append(part["text"])
+                    if status in _FAILED_STATUSES:
+                        return OwlResponse(
+                            model_name=self.model_name,
+                            source="google-deep",
+                            text="",
+                            error=f"deep research {status}: {_failure_reason(result)}",
+                        )
+
+                    if status == "completed":
                         elapsed = time.monotonic() - t0
                         return OwlResponse(
                             model_name=self.model_name,
                             source="google-deep",
-                            text="\n".join(text_parts) if text_parts else str(output),
+                            text=extract_text(result),
                             elapsed_seconds=round(elapsed, 1),
                         )
 

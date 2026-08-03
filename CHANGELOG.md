@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Realigned three providers with their current APIs after checking each contract against primary vendor documentation. Combined with the OpenAI fix in 0.2.0, four of the five deep research providers were calling endpoints, models or parameters that no longer exist.
+  - **DeepSeek**: `deepseek-reasoner` was discontinued on 2026-07-24 along with `deepseek-chat`. The default is now `deepseek-v4-flash` with `thinking` enabled explicitly, since V4 makes thinking opt-in where the old reasoner model had it on implicitly. The retired name is remapped rather than left to fail.
+  - **xAI**: the provider sent `grok-4.1-fast`, which is not a current model id, to `/v1/chat/completions` with `tools: [{"type": "web_search"}]` and a `chain_limit` parameter that has never existed in the xAI API. Chat Completions is documented as a deprecated endpoint supporting function calling only, so the agentic search this provider exists for was never reachable. It now posts to the Responses API as `grok-4.5` with server-side `web_search` and `x_search` tools.
+  - **Gemini**: the poll loop waited for a `done` boolean and read text from `response.outputParts[]`. Interactions actually report a `status` string and carry text in `steps[].content[].text`, so a completed research run would never have been recognised. Terminal failure statuses are now surfaced as errors with the reason instead of being polled until timeout.
+
+### Changed
+- Provider request shapes are now pinned by contract tests, so a rename or endpoint change fails a test rather than silently returning nothing.
+
 ## 0.2.0 (2026-08-03)
 
 ### Security
