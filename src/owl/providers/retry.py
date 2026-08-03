@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 import random
 from collections.abc import Callable, Coroutine
 from datetime import datetime, timezone
@@ -42,6 +43,15 @@ _RETRYABLE_EXCEPTIONS = (
 )
 
 
+def _log_safe(url: str) -> str:
+    """Redact credentials and flatten newlines before a URL reaches the log.
+
+    Defence in depth: a model name carrying CR/LF would otherwise be able
+    to forge whole log entries downstream.
+    """
+    return redact(url).replace("\r", " ").replace("\n", " ")
+
+
 def _delay_for(attempt: int) -> float:
     """Backoff for ``attempt``, with jitter, safe beyond the delay table."""
     base = RETRY_DELAYS[attempt] if attempt < len(RETRY_DELAYS) else RETRY_DELAYS[-1]
@@ -67,10 +77,14 @@ def parse_retry_after(value: str | None) -> float | None:
             return None
         if target is None:
             return None
-        now = datetime.now(timezone.utc) if target.tzinfo else datetime.now()
-        seconds = (target - now).total_seconds()
+        # A naive date means "-0000", which HTTP defines as UTC. Comparing
+        # it against local time would skew the delay by the UTC offset.
+        if target.tzinfo is None:
+            target = target.replace(tzinfo=timezone.utc)
+        seconds = (target - datetime.now(timezone.utc)).total_seconds()
 
-    if seconds <= 0 or seconds > MAX_RETRY_AFTER_SECONDS:
+    # NaN passes both comparisons below, and asyncio.sleep(nan) never wakes.
+    if not math.isfinite(seconds) or seconds <= 0 or seconds > MAX_RETRY_AFTER_SECONDS:
         return None
     return seconds
 
@@ -93,7 +107,7 @@ async def with_retry(
             delay = parse_retry_after(e.response.headers.get("Retry-After")) or _delay_for(attempt)
             logger.info(
                 "Retrying %s in %.1fs (status %s)",
-                redact(str(e.request.url)),
+                _log_safe(str(e.request.url)),
                 delay,
                 e.response.status_code,
             )

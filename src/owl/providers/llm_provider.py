@@ -13,9 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 class LlmProvider(Provider):
-    def __init__(self, model_id: str):
-        super().__init__(model_id)
-        self.model_id = model_id
+    def __init__(self, model_name: str):
+        super().__init__(model_name)
+        # Kept as a local alias: llm's own API calls this a model id.
+        self.model_id = model_name
 
     async def query(self, prompt: str, system_prompt: str | None = None) -> OwlResponse:
         try:

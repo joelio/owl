@@ -578,3 +578,18 @@ class TestGoogleDeepResponseShape:
         assert resp.text == ""
         assert "failed" in (resp.error or "")
         assert "quota exhausted" in (resp.error or "")
+
+
+class TestProviderConstruction:
+    """Every provider is built as cls(model_name=...) by the registry."""
+
+    @pytest.mark.parametrize(
+        "cls",
+        [LlmProvider, OpenAIDeepProvider, PerplexityProvider, DeepSeekProvider, XAIProvider],
+    )
+    def test_accepts_the_model_name_keyword(self, cls):
+        assert cls(model_name="some-model").model_name == "some-model"
+
+    def test_llm_provider_keeps_model_id_alias(self):
+        provider = LlmProvider(model_name="gpt-5")
+        assert provider.model_id == "gpt-5"

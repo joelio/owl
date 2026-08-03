@@ -23,7 +23,7 @@ SOURCE_TO_PROVIDER: dict[str, type[Provider]] = {
 def get_provider(member: CouncilMember) -> Provider:
     """Get the appropriate provider for a council member."""
     if member.source == "llm":
-        return LlmProvider(model_id=member.name)
+        return LlmProvider(model_name=member.name)
 
     provider_cls = SOURCE_TO_PROVIDER.get(member.source)
     if provider_cls is None:
