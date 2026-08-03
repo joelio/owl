@@ -339,7 +339,7 @@ turns CI red without anyone touching the code.
 1. Fork the repo
 2. Create a feature branch (`git checkout -b feature/amazing-owl`)
 3. Make your changes with tests
-4. Ensure `ruff check` and `pytest` pass
+4. Ensure `ruff check`, `ruff format --check`, `mypy src/owl` and `pytest` pass
 5. Open a PR
 
 ## License

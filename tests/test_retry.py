@@ -234,3 +234,40 @@ class TestJitter:
         await with_retry(fn)
         # Base 2.0 plus up to 25%, so never below base and never far above.
         assert 2.0 <= recorded[0] <= 2.5
+
+
+class TestRetryAfterEdgeCases:
+    """Values that slip past a naive bounds check."""
+
+    def test_nan_is_rejected(self):
+        # NaN passes both `<= 0` and `> MAX`, and asyncio.sleep(nan) never wakes.
+        assert parse_retry_after("nan") is None
+
+    @pytest.mark.parametrize("value", ["inf", "-inf", "infinity"])
+    def test_infinities_are_rejected(self, value):
+        assert parse_retry_after(value) is None
+
+    def test_naive_date_is_read_as_utc(self):
+        """A "-0000" date means UTC, not local time."""
+        import datetime as dt
+
+        soon = dt.datetime.now(dt.timezone.utc) + dt.timedelta(seconds=30)
+        # "-0000" makes parsedate_to_datetime return a naive datetime.
+        header = soon.strftime("%a, %d %b %Y %H:%M:%S -0000")
+        parsed = parse_retry_after(header)
+        assert parsed is not None
+        assert 25 < parsed <= 31
+
+
+class TestLogSafety:
+    def test_newlines_cannot_forge_a_log_entry(self):
+        from owl.providers.retry import _log_safe
+
+        out = _log_safe("https://x.test/v1/a\r\nINFO forged entry")
+        assert "\n" not in out
+        assert "\r" not in out
+
+    def test_credentials_are_still_redacted(self):
+        from owl.providers.retry import _log_safe
+
+        assert "SECRET" not in _log_safe("https://x.test/?key=SECRET")
