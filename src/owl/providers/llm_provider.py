@@ -6,6 +6,7 @@ import asyncio
 import time
 
 from .base import OwlResponse, Provider
+from .errors import describe_error
 
 
 class LlmProvider(Provider):
@@ -36,5 +37,5 @@ class LlmProvider(Provider):
                 model_name=self.model_id,
                 source="llm",
                 text="",
-                error=str(e),
+                error=describe_error(e),
             )

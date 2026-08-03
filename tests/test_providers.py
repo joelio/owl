@@ -330,3 +330,42 @@ class TestParseChatMessage:
     def test_missing_content(self):
         with pytest.raises(ValueError, match="no content"):
             parse_chat_message({"choices": [{"message": {}}]})
+
+
+class TestGoogleDeepAuth:
+    """The Gemini key must travel in a header, never in the URL.
+
+    A key in the query string ends up inside str(HTTPStatusError), which owl
+    surfaces as OwlResponse.error and posts to GitHub issues.
+    """
+
+    @pytest.fixture(autouse=True)
+    def fast_poll(self, monkeypatch):
+        monkeypatch.setenv("GOOGLE_API_KEY", "secret-key-value")
+        monkeypatch.setattr("owl.providers.google_deep.POLL_INTERVAL", 0)
+        monkeypatch.setattr("owl.providers.retry.RETRY_DELAYS", [0.0, 0.0])
+
+    @pytest.mark.asyncio
+    async def test_key_sent_as_header_not_query_param(self, httpx_mock):
+        httpx_mock.add_response(json={"name": "interactions/abc"})
+        httpx_mock.add_response(
+            json={"done": True, "response": {"outputParts": [{"text": "report"}]}}
+        )
+
+        await GoogleDeepProvider().query("q")
+
+        requests = httpx_mock.get_requests()
+        assert requests, "expected the provider to make requests"
+        for request in requests:
+            assert request.headers.get("x-goog-api-key") == "secret-key-value"
+            assert "secret-key-value" not in str(request.url)
+
+    @pytest.mark.asyncio
+    async def test_http_error_does_not_leak_key(self, httpx_mock):
+        httpx_mock.add_response(status_code=401)
+
+        resp = await GoogleDeepProvider().query("q")
+
+        assert resp.error is not None
+        assert "secret-key-value" not in resp.error
+        assert "401" in resp.error
