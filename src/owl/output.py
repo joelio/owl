@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from rich.console import Console
+from rich.console import Console, Group, RenderableType
 from rich.markdown import Markdown
+from rich.markup import escape
 from rich.panel import Panel
+from rich.text import Text
 
 from .providers.base import OwlResponse
 
@@ -13,6 +15,41 @@ def _timing_badge(resp: OwlResponse) -> str:
     if resp.elapsed_seconds is not None:
         return f" [dim]({resp.elapsed_seconds}s)[/dim]"
     return ""
+
+
+def _panel_title(response: OwlResponse) -> str:
+    """Build the panel title.
+
+    Model names come from config and from API responses, so they are escaped
+    before going into a string rich will parse for markup.
+    """
+    source_tag = f"[dim]{escape(response.source)}[/dim]"
+    return f"🦉 {escape(response.model_name)} {source_tag}{_timing_badge(response)}"
+
+
+def _response_body(response: OwlResponse) -> RenderableType:
+    """Assemble the panel body out of separate renderables.
+
+    Labels are ``Text`` rather than console markup embedded in the markdown
+    string: ``Markdown`` does not parse console markup, so a
+    ``[dim]Reasoning:[/dim]`` prefix reached the user verbatim, tags and all.
+    """
+    parts: list[RenderableType] = []
+
+    if response.reasoning:
+        parts.append(Text("Reasoning", style="dim bold"))
+        parts.append(Markdown(response.reasoning))
+        parts.append(Text())
+
+    parts.append(Markdown(response.text))
+
+    if response.citations:
+        parts.append(Text())
+        parts.append(Text("Sources", style="bold"))
+        for cite in response.citations:
+            parts.append(Text(f"  • {cite}"))
+
+    return Group(*parts)
 
 
 def print_responses(responses: list[OwlResponse], console: Console | None = None) -> None:
@@ -29,22 +66,9 @@ def print_responses(responses: list[OwlResponse], console: Console | None = None
     console.print()
 
     for response in success:
-        source_tag = f"[dim]{response.source}[/dim]"
-        timing = _timing_badge(response)
-        title = f"🦉 {response.model_name} {source_tag}{timing}"
-
-        content_parts = []
-        if response.reasoning:
-            content_parts.append("[dim]Reasoning:[/dim]\n" + response.reasoning + "\n")
-        content_parts.append(response.text)
-        if response.citations:
-            content_parts.append("\n[bold]Sources:[/bold]")
-            for cite in response.citations:
-                content_parts.append(f"  • {cite}")
-
         panel = Panel(
-            Markdown("\n".join(content_parts)),
-            title=title,
+            _response_body(response),
+            title=_panel_title(response),
             title_align="left",
             border_style="cyan",
             expand=True,
@@ -52,9 +76,11 @@ def print_responses(responses: list[OwlResponse], console: Console | None = None
         console.print(panel)
 
     for response in errors:
+        # Error text carries API payload snippets, and those contain brackets.
+        # Rendering it as Text stops rich swallowing "[...]" as a style tag.
         panel = Panel(
-            f"[red]{response.error}[/red]",
-            title=f"🦉 {response.model_name} [red]ERROR[/red]",
+            Text(response.error or "", style="red"),
+            title=f"🦉 {escape(response.model_name)} [red]ERROR[/red]",
             title_align="left",
             border_style="red",
             expand=True,
