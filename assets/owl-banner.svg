@@ -1,51 +1,86 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" width="800" height="200">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" width="800" height="200" role="img" aria-label="Parliament of Owls — query multiple LLMs in parallel">
+  <!--
+    Parliament of Owls — banner
+    Self-backgrounded indigo card so it renders identically on light and dark
+    GitHub themes. Left: the seal mark. Right: the council — three owls of
+    different colours (different models) sharing one perch; one is asleep.
+    Text uses a generic system stack only; nothing breaks without webfonts.
+    Palette: ink #263250 / card #1B2236 / amber #E9A83E / cream #F5EBD8 / slate #6B7A9E
+  -->
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#1a1a2e" />
-      <stop offset="100%" style="stop-color:#16213e" />
-    </linearGradient>
+    <!-- Shared owl bust silhouette (same geometry as owl-logo.svg) -->
+    <path id="owl-bust" d="M 100 66
+      Q 77 64 50 30
+      Q 34 58 38 92
+      C 39 132 60 168 100 170
+      C 140 168 161 132 162 92
+      Q 166 58 150 30
+      Q 123 64 100 66 Z"/>
+    <clipPath id="card-clip">
+      <rect x="2" y="2" width="796" height="196" rx="18"/>
+    </clipPath>
   </defs>
-  <!-- Background -->
-  <rect width="800" height="200" rx="12" fill="url(#bg)" />
-  <!-- Owl icon (simplified) -->
-  <g transform="translate(40, 20) scale(0.8)">
-    <!-- Body -->
-    <ellipse cx="100" cy="120" rx="45" ry="50" fill="#4A3728" />
-    <!-- Belly -->
-    <ellipse cx="100" cy="132" rx="28" ry="32" fill="#D4A574" />
-    <!-- Head -->
-    <ellipse cx="100" cy="72" rx="38" ry="32" fill="#5C4033" />
-    <!-- Ear tufts -->
-    <path d="M68,48 L62,26 L80,45" fill="#5C4033" />
-    <path d="M132,48 L138,26 L120,45" fill="#5C4033" />
-    <!-- Eye discs -->
-    <circle cx="84" cy="70" r="16" fill="#E8D5B7" />
-    <circle cx="116" cy="70" r="16" fill="#E8D5B7" />
-    <!-- Eyes -->
-    <circle cx="84" cy="70" r="10" fill="#FF8C00" />
-    <circle cx="116" cy="70" r="10" fill="#FF8C00" />
-    <!-- Pupils -->
-    <circle cx="86" cy="68" r="6" fill="#1A1A1A" />
-    <circle cx="118" cy="68" r="6" fill="#1A1A1A" />
-    <!-- Eye shine -->
-    <circle cx="88" cy="66" r="2.5" fill="white" opacity="0.8" />
-    <circle cx="120" cy="66" r="2.5" fill="white" opacity="0.8" />
-    <!-- Beak -->
-    <path d="M96,82 L100,92 L104,82" fill="#E8A317" />
-  </g>
-  <!-- Title -->
-  <text x="240" y="85" font-family="system-ui, -apple-system, sans-serif" font-size="42" font-weight="bold" fill="#E8D5B7">Parliament of Owls</text>
-  <!-- Subtitle -->
-  <text x="240" y="120" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#8B9DC3">Query multiple LLMs in parallel</text>
-  <!-- Tags -->
-  <g transform="translate(240, 140)">
-    <rect x="0" y="0" width="100" height="26" rx="13" fill="#FF8C00" opacity="0.2" />
-    <text x="50" y="18" font-family="monospace" font-size="12" fill="#FF8C00" text-anchor="middle">deep research</text>
-    <rect x="110" y="0" width="90" height="26" rx="13" fill="#4CAF50" opacity="0.2" />
-    <text x="155" y="18" font-family="monospace" font-size="12" fill="#4CAF50" text-anchor="middle">github issues</text>
-    <rect x="210" y="0" width="50" height="26" rx="13" fill="#2196F3" opacity="0.2" />
-    <text x="235" y="18" font-family="monospace" font-size="12" fill="#2196F3" text-anchor="middle">free</text>
-    <rect x="270" y="0" width="75" height="26" rx="13" fill="#9C27B0" opacity="0.2" />
-    <text x="307" y="18" font-family="monospace" font-size="12" fill="#9C27B0" text-anchor="middle">multi-llm</text>
+
+  <!-- Card -->
+  <rect x="2" y="2" width="796" height="196" rx="18" fill="#1B2236" stroke="#39466B" stroke-width="2.5"/>
+
+  <g clip-path="url(#card-clip)">
+    <!-- Faint echo of the seal ring, top right -->
+    <circle cx="700" cy="10" r="112" fill="none" stroke="#E9A83E" stroke-width="3"
+            stroke-linecap="round" stroke-dasharray="0.1 12" opacity="0.18"/>
+
+    <!-- The seal mark -->
+    <g transform="translate(28,28) scale(0.72)">
+      <circle cx="100" cy="100" r="94" fill="#E9A83E"/>
+      <circle cx="100" cy="100" r="84" fill="none" stroke="#B97A24" stroke-width="3.5"
+              stroke-linecap="round" stroke-dasharray="0.1 12.05"/>
+      <use href="#owl-bust" fill="#263250"/>
+      <circle cx="68"  cy="88" r="26" fill="#F5EBD8"/>
+      <circle cx="132" cy="88" r="26" fill="#F5EBD8"/>
+      <circle cx="68"  cy="88" r="14" fill="#263250"/>
+      <circle cx="132" cy="88" r="14" fill="#263250"/>
+      <path fill="#E9A83E" d="M 100 110 L 108 118 L 100 132 L 92 118 Z"/>
+      <path d="M 84 142 Q 100 150 116 142" stroke="#3A4869" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M 89 154 Q 100 160 111 154" stroke="#3A4869" stroke-width="4" fill="none" stroke-linecap="round"/>
+    </g>
+
+    <!-- Wordmark -->
+    <text x="200" y="84" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+          font-size="42" font-weight="800" letter-spacing="-0.5"
+          fill="#F5EBD8">Parliament of <tspan fill="#E9A83E">Owls</tspan></text>
+
+    <!-- Tagline -->
+    <text x="200" y="116" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+          font-size="17" fill="#9BA8C6">Query multiple LLMs in parallel.</text>
+
+    <!-- CLI chip -->
+    <rect x="200" y="134" width="158" height="32" rx="8" fill="#12182A" stroke="#39466B" stroke-width="1.5"/>
+    <text x="214" y="155" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="14" fill="#E9A83E">$ owl ask "&#8230;"</text>
+
+    <!-- The council: three models, one perch -->
+    <line x1="588" y1="150" x2="778" y2="150" stroke="#4A5B85" stroke-width="4" stroke-linecap="round"/>
+
+    <!-- amber member -->
+    <g transform="translate(598,95.6) scale(0.32)">
+      <use href="#owl-bust" fill="#E9A83E"/>
+      <circle cx="72"  cy="90" r="11" fill="#1B2236"/>
+      <circle cx="128" cy="90" r="11" fill="#1B2236"/>
+      <path fill="#1B2236" d="M 100 104 L 108 112 L 100 126 L 92 112 Z"/>
+    </g>
+    <!-- cream member (asleep) -->
+    <g transform="translate(643,82) scale(0.40)">
+      <use href="#owl-bust" fill="#F5EBD8"/>
+      <path d="M 60 88 Q 72 98 84 88"   stroke="#1B2236" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <path d="M 116 88 Q 128 98 140 88" stroke="#1B2236" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <path fill="#1B2236" d="M 100 104 L 108 112 L 100 126 L 92 112 Z"/>
+    </g>
+    <!-- slate member (leaning) -->
+    <g transform="translate(707,104.1) scale(0.27) rotate(-8 100 170)">
+      <use href="#owl-bust" fill="#6B7A9E"/>
+      <circle cx="72"  cy="90" r="11" fill="#1B2236"/>
+      <circle cx="128" cy="90" r="11" fill="#1B2236"/>
+      <path fill="#1B2236" d="M 100 104 L 108 112 L 100 126 L 92 112 Z"/>
+    </g>
   </g>
 </svg>

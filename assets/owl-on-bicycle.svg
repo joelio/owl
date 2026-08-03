@@ -1,97 +1,178 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
-  <!-- Ground line -->
-  <line x1="20" y1="260" x2="380" y2="260" stroke="#555" stroke-width="2" stroke-dasharray="8,4" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="An owl riding a bicycle, with two owlets in the front basket">
+  <!--
+    Parliament of Owls — README hero
+    The council commutes: one owl rides, the rest of the parliament travels
+    in the basket. Same bust geometry and palette as owl-logo.svg.
+    Transparent background; every colour is mid-tone so the drawing holds on
+    both #ffffff and #0d1117.
+    Palette: ink #263250 / body #3E4E71 / amber #E9A83E / deep amber #C4832A
+             cream #F5EBD8 / slate #6B7A9E / coral #E0684F
+  -->
+  <defs>
+    <!-- Shared owl bust silhouette (same geometry as owl-logo.svg) -->
+    <path id="bust" d="M 100 66
+      Q 77 64 50 30
+      Q 34 58 38 92
+      C 39 132 60 168 100 170
+      C 140 168 161 132 162 92
+      Q 166 58 150 30
+      Q 123 64 100 66 Z"/>
+  </defs>
 
-  <!-- Back wheel -->
-  <circle cx="130" cy="235" r="35" fill="none" stroke="#666" stroke-width="3" />
-  <circle cx="130" cy="235" r="3" fill="#666" />
-  <!-- Spokes -->
-  <line x1="130" y1="200" x2="130" y2="270" stroke="#888" stroke-width="1" />
-  <line x1="95" y1="235" x2="165" y2="235" stroke="#888" stroke-width="1" />
-  <line x1="105" y1="210" x2="155" y2="260" stroke="#888" stroke-width="1" />
-  <line x1="155" y1="210" x2="105" y2="260" stroke="#888" stroke-width="1" />
+  <!-- Sky: faint echo of the seal ring -->
+  <circle cx="362" cy="34" r="72" fill="none" stroke="#E9A83E" stroke-width="3"
+          stroke-linecap="round" stroke-dasharray="0.1 12" opacity="0.3"/>
 
-  <!-- Front wheel -->
-  <circle cx="280" cy="235" r="35" fill="none" stroke="#666" stroke-width="3" />
-  <circle cx="280" cy="235" r="3" fill="#666" />
-  <!-- Spokes -->
-  <line x1="280" y1="200" x2="280" y2="270" stroke="#888" stroke-width="1" />
-  <line x1="245" y1="235" x2="315" y2="235" stroke="#888" stroke-width="1" />
-  <line x1="255" y1="210" x2="305" y2="260" stroke="#888" stroke-width="1" />
-  <line x1="305" y1="210" x2="255" y2="260" stroke="#888" stroke-width="1" />
+  <!-- Ground (dotted road) -->
+  <line x1="22" y1="276" x2="380" y2="276" stroke="#6B7A9E" stroke-width="3.5"
+        stroke-linecap="round" stroke-dasharray="0.1 14" opacity="0.8"/>
 
-  <!-- Frame -->
-  <!-- Bottom bracket to seat tube -->
-  <line x1="195" y1="220" x2="175" y2="170" stroke="#E8A317" stroke-width="4" stroke-linecap="round" />
-  <!-- Bottom bracket to rear axle -->
-  <line x1="195" y1="220" x2="130" y2="235" stroke="#E8A317" stroke-width="4" stroke-linecap="round" />
-  <!-- Seat tube to rear axle (seat stay) -->
-  <line x1="175" y1="170" x2="130" y2="235" stroke="#E8A317" stroke-width="3" stroke-linecap="round" />
-  <!-- Top tube -->
-  <line x1="175" y1="170" x2="250" y2="165" stroke="#E8A317" stroke-width="4" stroke-linecap="round" />
-  <!-- Down tube -->
-  <line x1="195" y1="220" x2="250" y2="165" stroke="#E8A317" stroke-width="4" stroke-linecap="round" />
-  <!-- Head tube to front axle (fork) -->
-  <line x1="250" y1="165" x2="280" y2="235" stroke="#E8A317" stroke-width="3" stroke-linecap="round" />
-  <!-- Handlebar post -->
-  <line x1="250" y1="165" x2="258" y2="145" stroke="#666" stroke-width="3" stroke-linecap="round" />
-  <!-- Handlebars -->
-  <path d="M242,142 Q258,135 274,142" stroke="#666" stroke-width="3" fill="none" stroke-linecap="round" />
-  <!-- Seat post -->
-  <line x1="175" y1="170" x2="172" y2="155" stroke="#666" stroke-width="3" stroke-linecap="round" />
-  <!-- Seat -->
-  <ellipse cx="172" cy="152" rx="15" ry="5" fill="#4A3728" />
-  <!-- Pedals -->
-  <line x1="185" y1="225" x2="205" y2="215" stroke="#666" stroke-width="3" stroke-linecap="round" />
-  <rect x="181" y="223" width="8" height="4" rx="1" fill="#888" transform="rotate(-15, 185, 225)" />
-  <rect x="203" y="211" width="8" height="4" rx="1" fill="#888" transform="rotate(-15, 207, 213)" />
+  <!-- Speed lines and dust -->
+  <g stroke="#6B7A9E" stroke-linecap="round" fill="none">
+    <path d="M 18 122 h 34" stroke-width="3.5" opacity="0.55"/>
+    <path d="M 10 150 h 26" stroke-width="3.5" opacity="0.4"/>
+    <path d="M 24 178 h 38" stroke-width="3.5" opacity="0.55"/>
+    <path d="M 34 236 h 24" stroke-width="3"   opacity="0.35"/>
+  </g>
+  <circle cx="58" cy="258" r="4"   fill="#6B7A9E" opacity="0.3"/>
+  <circle cx="44" cy="265" r="2.5" fill="#6B7A9E" opacity="0.25"/>
 
-  <!-- OWL on the bicycle -->
-  <g transform="translate(135, 50)">
-    <!-- Body -->
-    <ellipse cx="40" cy="80" rx="30" ry="35" fill="#4A3728" />
-    <!-- Belly -->
-    <ellipse cx="40" cy="88" rx="20" ry="22" fill="#D4A574" />
-    <!-- Belly feathers -->
-    <path d="M28,78 Q40,84 52,78" stroke="#C4956A" stroke-width="1" fill="none" />
-    <path d="M27,85 Q40,91 53,85" stroke="#C4956A" stroke-width="1" fill="none" />
-    <path d="M28,92 Q40,98 52,92" stroke="#C4956A" stroke-width="1" fill="none" />
-    <!-- Head -->
-    <ellipse cx="50" cy="45" rx="28" ry="24" fill="#5C4033" />
-    <!-- Ear tufts -->
-    <path d="M30,30 L24,10 L40,28" fill="#5C4033" />
-    <path d="M70,30 L76,10 L60,28" fill="#5C4033" />
-    <!-- Eye discs -->
-    <circle cx="40" cy="43" r="12" fill="#E8D5B7" />
-    <circle cx="60" cy="43" r="12" fill="#E8D5B7" />
-    <!-- Eyes (looking ahead, determined) -->
-    <circle cx="40" cy="43" r="8" fill="#FF8C00" />
-    <circle cx="60" cy="43" r="8" fill="#FF8C00" />
-    <!-- Pupils (looking forward) -->
-    <circle cx="43" cy="42" r="5" fill="#1A1A1A" />
-    <circle cx="63" cy="42" r="5" fill="#1A1A1A" />
-    <!-- Eye shine -->
-    <circle cx="45" cy="40" r="2" fill="white" opacity="0.8" />
-    <circle cx="65" cy="40" r="2" fill="white" opacity="0.8" />
-    <!-- Beak -->
-    <path d="M47,52 L50,60 L53,52" fill="#E8A317" />
-    <!-- Wings (swept back, riding pose) -->
-    <path d="M12,70 Q0,60 5,85 Q12,78 15,70 Z" fill="#3D2B1F" />
-    <!-- Wing gripping handlebar -->
-    <path d="M65,75 Q80,65 85,80 Q78,78 68,78 Z" fill="#3D2B1F" />
-    <!-- Feet on pedals -->
-    <path d="M25,112 L20,118" stroke="#E8A317" stroke-width="2.5" stroke-linecap="round" />
-    <path d="M38,115 L42,120" stroke="#E8A317" stroke-width="2.5" stroke-linecap="round" />
+  <!-- Rear wheel -->
+  <g>
+    <g stroke="#6B7A9E" stroke-width="1.8" opacity="0.75">
+      <line x1="112" y1="201" x2="112" y2="263"/>
+      <line x1="81"  y1="232" x2="143" y2="232"/>
+      <line x1="90"  y1="210" x2="134" y2="254"/>
+      <line x1="134" y1="210" x2="90"  y2="254"/>
+    </g>
+    <circle cx="112" cy="232" r="38" fill="none" stroke="#5D6E94" stroke-width="5.5"/>
   </g>
 
-  <!-- Speed lines -->
-  <line x1="40" y1="100" x2="80" y2="100" stroke="#888" stroke-width="1.5" opacity="0.4" />
-  <line x1="30" y1="120" x2="70" y2="120" stroke="#888" stroke-width="1.5" opacity="0.3" />
-  <line x1="50" y1="140" x2="85" y2="140" stroke="#888" stroke-width="1.5" opacity="0.4" />
-  <line x1="35" y1="160" x2="65" y2="160" stroke="#888" stroke-width="1" opacity="0.3" />
-  <line x1="45" y1="200" x2="75" y2="200" stroke="#888" stroke-width="1" opacity="0.2" />
+  <!-- Club pennant, mounted on the rear hub -->
+  <line x1="112" y1="232" x2="96" y2="150" stroke="#6B7A9E" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 96 150 L 66 158 L 96 168 Z" fill="#E9A83E"/>
+  <circle cx="112" cy="232" r="4.5" fill="#E9A83E"/>
 
-  <!-- Scarf fluttering behind -->
-  <path d="M170,88 Q145,82 120,90 Q100,95 80,88" stroke="#E74C3C" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.8" />
-  <path d="M170,88 Q150,95 130,100 Q110,104 90,98" stroke="#C0392B" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.6" />
+  <!-- Front wheel -->
+  <g>
+    <g stroke="#6B7A9E" stroke-width="1.8" opacity="0.75">
+      <line x1="298" y1="201" x2="298" y2="263"/>
+      <line x1="267" y1="232" x2="329" y2="232"/>
+      <line x1="276" y1="210" x2="320" y2="254"/>
+      <line x1="320" y1="210" x2="276" y2="254"/>
+    </g>
+    <circle cx="298" cy="232" r="38" fill="none" stroke="#5D6E94" stroke-width="5.5"/>
+    <circle cx="298" cy="232" r="4.5" fill="#E9A83E"/>
+  </g>
+
+  <!-- Frame: a proper closed diamond. The head tube (thicker, on the
+       steering axis through the front hub) joins top tube, down tube,
+       fork and steerer. -->
+  <g stroke="#E9A83E" stroke-width="5" stroke-linecap="round" fill="none">
+    <line x1="196" y1="228" x2="112" y2="232"/>                  <!-- chainstay: BB to rear hub -->
+    <line x1="112" y1="232" x2="168" y2="156" stroke-width="4"/> <!-- seat stay: rear hub to seat cluster -->
+    <line x1="196" y1="228" x2="170" y2="158"/>                  <!-- seat tube: BB to seat cluster -->
+    <line x1="168" y1="158" x2="262" y2="147"/>                  <!-- top tube: seat cluster to head tube top -->
+    <line x1="196" y1="228" x2="270" y2="165"/>                  <!-- down tube: BB to head tube bottom -->
+    <line x1="261" y1="142" x2="272" y2="169" stroke-width="7"/> <!-- head tube -->
+    <line x1="272" y1="169" x2="298" y2="232" stroke-width="4"/> <!-- fork: head tube to front hub -->
+  </g>
+  <!-- Drivetrain: chainring on the BB, chain runs to a rear cog -->
+  <line x1="196" y1="219" x2="112" y2="226" stroke="#4A5B85" stroke-width="2" opacity="0.9"/>
+  <line x1="196" y1="237" x2="112" y2="238" stroke="#4A5B85" stroke-width="2" opacity="0.9"/>
+  <circle cx="112" cy="232" r="6" fill="none" stroke="#4A5B85" stroke-width="2.5"/>
+  <circle cx="196" cy="228" r="9" fill="#4A5B85"/>
+  <line x1="196" y1="228" x2="178" y2="246" stroke="#4A5B85" stroke-width="4" stroke-linecap="round"/>
+  <line x1="196" y1="228" x2="214" y2="210" stroke="#4A5B85" stroke-width="4" stroke-linecap="round"/>
+  <rect x="169" y="244" width="15" height="5" rx="2.5" fill="#4A5B85"/>
+  <rect x="208" y="206" width="15" height="5" rx="2.5" fill="#4A5B85"/>
+  <!-- Steerer + stem continue the head tube axis; bars sweep back so the
+       grip points at the rider -->
+  <line x1="261" y1="142" x2="255" y2="127" stroke="#6B7A9E" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 280 133 Q 272 117 252 124" stroke="#6B7A9E" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <!-- Seat post: emerges from the seat tube, disappears under the saddle -->
+  <line x1="171" y1="159" x2="166" y2="151" stroke="#4A5B85" stroke-width="4.5" stroke-linecap="round"/>
+
+  <!-- Saddle: slate like the rest of the hardware (post, bars, cranks) so
+       it separates from the amber frame below and the indigo belly above.
+       Narrow nose forward, swept-up tail behind; top surface sits exactly
+       at the rider's belly line so the profile stays visible below the bird. -->
+  <path fill="#5D6E94" d="M 188 148.5
+    Q 177 143.5 162 144.5
+    Q 150 145.5 141 136
+    Q 144 149 157 152.5
+    Q 174 154.5 188 148.5 Z"/>
+
+  <!-- Scarf streamers, trailing behind from the neck knot -->
+  <path d="M 129 120 C 108 110 92 120 74 114 C 62 110 52 116 40 110"
+        stroke="#E0684F" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M 129 124 C 114 128 100 136 84 132 C 74 130 66 134 56 130"
+        stroke="#C4523C" stroke-width="4.5" fill="none" stroke-linecap="round" opacity="0.85"/>
+
+  <!-- Far leg: emerges from behind the saddle, bent at the knee, foot on
+       the raised pedal -->
+  <path d="M 177 154 L 200 181 L 215 207" stroke="#2F3C59" stroke-width="5"
+        fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- The rider, perched on the saddle (kept unrotated so the belly line
+       and saddle top align exactly) -->
+  <g transform="translate(102,40) scale(0.62)">
+    <use href="#bust" fill="#3E4E71"/>
+    <circle cx="68"  cy="88" r="26" fill="#F5EBD8"/>
+    <circle cx="132" cy="88" r="26" fill="#F5EBD8"/>
+    <!-- pupils look down the road -->
+    <circle cx="72"  cy="88" r="14" fill="#263250"/>
+    <circle cx="136" cy="88" r="14" fill="#263250"/>
+    <circle cx="76"  cy="83" r="3.5" fill="#F5EBD8"/>
+    <circle cx="140" cy="83" r="3.5" fill="#F5EBD8"/>
+    <path fill="#E9A83E" d="M 100 110 L 108 118 L 100 132 L 92 118 Z"/>
+    <path d="M 84 142 Q 100 150 116 142" stroke="#2E3C5C" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M 89 154 Q 100 160 111 154" stroke="#2E3C5C" stroke-width="4" fill="none" stroke-linecap="round"/>
+  </g>
+  <!-- Scarf band: below the beak and chin, around the base of the head,
+       tucked behind the wing shoulder (streamers start at the same knot) -->
+  <path d="M 129 120 Q 166 136 198 118" stroke="#E0684F" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+  <circle cx="129" cy="120" r="5.5" fill="#E0684F"/>
+
+  <!-- Wing reaching the bar grip -->
+  <path d="M 192 104 C 214 102 236 110 250 121 C 254 125 250 131 243 128 C 228 120 210 122 192 122 Z"
+        fill="#3E4E71"/>
+  <circle cx="251" cy="123" r="6" fill="#3E4E71"/>
+
+  <!-- Near leg: hip set well back so the thigh crosses only the saddle's
+       tail and the seat post stays visible; bent knee, foot on the pedal -->
+  <path d="M 154 144 L 178 188 L 177 242" stroke="#3E4E71" stroke-width="5"
+        fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Claw feet gripping the pedals -->
+  <path d="M 177 242 L 169 248 M 177 242 L 177 250 M 177 242 L 185 248"
+        stroke="#E9A83E" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M 215 207 L 208 212 M 215 207 L 215 214 M 215 207 L 222 212"
+        stroke="#E9A83E" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Basket passengers (the rest of the parliament) -->
+  <g transform="translate(287,126) scale(0.20)">
+    <use href="#bust" fill="#E9A83E"/>
+    <circle cx="72"  cy="90" r="13" fill="#263250"/>
+    <circle cx="128" cy="90" r="13" fill="#263250"/>
+    <path fill="#263250" d="M 100 104 L 108 112 L 100 126 L 92 112 Z"/>
+  </g>
+  <g transform="translate(309,120.4) scale(0.24)">
+    <use href="#bust" fill="#F5EBD8"/>
+    <circle cx="72"  cy="90" r="13" fill="#263250"/>
+    <circle cx="128" cy="90" r="13" fill="#263250"/>
+    <path fill="#263250" d="M 100 104 L 108 112 L 100 126 L 92 112 Z"/>
+  </g>
+
+  <!-- Basket -->
+  <path d="M 288 152 L 346 152 L 338 192 L 296 192 Z" fill="#C98A33"/>
+  <g stroke="#A96F26" stroke-width="2.5">
+    <line x1="290" y1="163" x2="344" y2="163"/>
+    <line x1="292" y1="173" x2="342" y2="173"/>
+    <line x1="294" y1="183" x2="340" y2="183"/>
+  </g>
+  <rect x="284" y="148" width="66" height="7" rx="3.5" fill="#A96F26"/>
+  <!-- Basket struts -->
+  <line x1="300" y1="192" x2="298" y2="228" stroke="#6B7A9E" stroke-width="2.5"/>
+  <line x1="336" y1="192" x2="300" y2="230" stroke="#6B7A9E" stroke-width="2.5"/>
 </svg>
