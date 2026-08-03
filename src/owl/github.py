@@ -36,9 +36,14 @@ def _format_response_section(response: OwlResponse) -> str:
     source_label = "llm plugin" if response.source == "llm" else response.source
     timing = f" — {response.elapsed_seconds}s" if response.elapsed_seconds else ""
 
+    summary = (
+        f"<summary><strong>🦉 {response.model_name}</strong> "
+        f"<em>({source_label}{timing})</em></summary>"
+    )
+
     lines = [
         "<details>",
-        f"<summary><strong>🦉 {response.model_name}</strong> <em>({source_label}{timing})</em></summary>",
+        summary,
         "",
     ]
 

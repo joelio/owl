@@ -9,7 +9,6 @@ from typing import Any
 
 import yaml
 
-
 CONFIG_DIR = Path(os.environ.get("OWL_CONFIG_DIR", Path.home() / ".owl"))
 CONFIG_FILE = CONFIG_DIR / "config.yaml"
 
