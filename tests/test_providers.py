@@ -369,3 +369,81 @@ class TestGoogleDeepAuth:
         assert resp.error is not None
         assert "secret-key-value" not in resp.error
         assert "401" in resp.error
+
+
+class TestOpenAIDeepResearch:
+    """Deep research is a background job, not a single blocking POST."""
+
+    @pytest.fixture(autouse=True)
+    def fast_poll(self, monkeypatch):
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        monkeypatch.setattr("owl.providers.openai_deep.POLL_INTERVAL", 0)
+        monkeypatch.setattr("owl.providers.retry.RETRY_DELAYS", [0.0, 0.0])
+
+    def _completed(self, text="the report"):
+        return {
+            "status": "completed",
+            "output": [{"type": "message", "content": [{"type": "output_text", "text": text}]}],
+        }
+
+    def test_uses_the_supported_web_search_tool(self):
+        # Deep research models reject the plain "web_search" tool with a 400.
+        request = OpenAIDeepProvider("o3-deep-research").build_request("q", None, "k")
+        assert request["json"]["tools"] == [{"type": "web_search_preview"}]
+
+    def test_starts_the_job_in_background_mode(self):
+        request = OpenAIDeepProvider("o3-deep-research").build_request("q", None, "k")
+        assert request["json"]["background"] is True
+
+    @pytest.mark.asyncio
+    async def test_polls_until_completed(self, httpx_mock):
+        httpx_mock.add_response(json={"id": "resp_1", "status": "queued"})
+        httpx_mock.add_response(json={"id": "resp_1", "status": "in_progress"})
+        httpx_mock.add_response(json=self._completed())
+
+        resp = await OpenAIDeepProvider("o3-deep-research").query("q")
+
+        assert resp.error is None
+        assert resp.text == "the report"
+        assert len(httpx_mock.get_requests()) == 3
+
+    @pytest.mark.asyncio
+    async def test_immediate_completion_needs_no_polling(self, httpx_mock):
+        httpx_mock.add_response(json=self._completed("done already"))
+
+        resp = await OpenAIDeepProvider("o3-deep-research").query("q")
+
+        assert resp.text == "done already"
+        assert len(httpx_mock.get_requests()) == 1
+
+    @pytest.mark.asyncio
+    async def test_failed_status_becomes_an_error(self, httpx_mock):
+        httpx_mock.add_response(json={"id": "resp_1", "status": "queued"})
+        httpx_mock.add_response(
+            json={"status": "failed", "error": {"message": "rate limit exceeded"}}
+        )
+
+        resp = await OpenAIDeepProvider("o3-deep-research").query("q")
+
+        assert resp.text == ""
+        assert resp.error is not None
+        assert "failed" in resp.error
+        assert "rate limit exceeded" in resp.error
+
+    @pytest.mark.asyncio
+    async def test_incomplete_status_reports_the_reason(self, httpx_mock):
+        httpx_mock.add_response(
+            json={"status": "incomplete", "incomplete_details": {"reason": "max_output_tokens"}}
+        )
+
+        resp = await OpenAIDeepProvider("o3-deep-research").query("q")
+
+        assert "max_output_tokens" in (resp.error or "")
+
+    @pytest.mark.asyncio
+    async def test_missing_id_is_an_error(self, httpx_mock):
+        httpx_mock.add_response(json={"status": "queued"})
+
+        resp = await OpenAIDeepProvider("o3-deep-research").query("q")
+
+        assert "no id" in (resp.error or "")
