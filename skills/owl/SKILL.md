@@ -19,7 +19,7 @@ owl ask [PROMPT]           # Query all council members in parallel
   --issue NUMBER           # Post to existing issue (requires --gh)
   # Also accepts stdin: echo "question" | owl ask
 
-owl council                # Interactive TUI to select council members
+owl council                # Interactive picker (/text filters, a/n act on shown rows)
 owl council-list           # Show current council members
 owl models                 # Show all available models
 owl --version
