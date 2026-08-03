@@ -61,7 +61,7 @@ class TestFormatResponseSection:
 class TestBuildConsolidatedComment:
     def test_single_response(self):
         responses = [OwlResponse(model_name="gpt-5", source="llm", text="Hello")]
-        bodies = _build_consolidated_comment(responses, "test prompt")
+        bodies = _build_consolidated_comment(responses)
         assert len(bodies) == 1
         assert "Council Response" in bodies[0]
         assert "1 of 1 members responded" in bodies[0]
@@ -73,7 +73,7 @@ class TestBuildConsolidatedComment:
             OwlResponse(model_name="gpt-5", source="llm", text="OK"),
             OwlResponse(model_name="bad-model", source="llm", text="", error="API timeout"),
         ]
-        bodies = _build_consolidated_comment(responses, "test")
+        bodies = _build_consolidated_comment(responses)
         combined = "\n".join(bodies)
         assert "1 of 2 members responded" in combined
         assert "Errors" in combined
@@ -85,7 +85,7 @@ class TestBuildConsolidatedComment:
             OwlResponse(model_name="model-a", source="llm", text="Answer A"),
             OwlResponse(model_name="model-b", source="llm", text="Answer B"),
         ]
-        bodies = _build_consolidated_comment(responses, "test")
+        bodies = _build_consolidated_comment(responses)
         combined = "\n".join(bodies)
         assert combined.count("<details>") >= 2
         assert combined.count("</details>") >= 2
@@ -97,7 +97,7 @@ class TestBuildConsolidatedComment:
         responses = [
             OwlResponse(model_name=f"model-{i}", source="llm", text=big_text) for i in range(5)
         ]
-        bodies = _build_consolidated_comment(responses, "test")
+        bodies = _build_consolidated_comment(responses)
         assert len(bodies) > 1
         for body in bodies:
             assert len(body) <= 62_000 + 5_000  # allow some slack for headers/footers
@@ -108,7 +108,7 @@ class TestBuildConsolidatedComment:
         responses = [
             OwlResponse(model_name="model-a", source="llm", text="Short answer"),
         ]
-        bodies = _build_consolidated_comment(responses, "test")
+        bodies = _build_consolidated_comment(responses)
         assert len(bodies) == 1
 
 
@@ -133,3 +133,52 @@ class TestGitHubTimeouts:
         num = await gh.create_issue("o/r", "title", "body")
         assert num == 7
         assert captured["timeout"] == 30.0
+
+
+class TestOversizedResponses:
+    """No comment body may exceed GitHub's hard limit.
+
+    GitHub rejects an oversized body with a 422, and because every response
+    is posted in the same pass, one huge response used to lose them all.
+    """
+
+    GITHUB_HARD_LIMIT = 65_536
+
+    def test_single_huge_response_is_truncated(self):
+        huge = OwlResponse(model_name="big", source="llm", text="x" * 200_000)
+        bodies = _build_consolidated_comment([huge])
+        assert len(bodies) == 1
+        assert len(bodies[0]) <= self.GITHUB_HARD_LIMIT
+        assert "truncated" in bodies[0]
+
+    def test_truncated_section_keeps_details_balanced(self):
+        huge = OwlResponse(model_name="big", source="llm", text="x" * 200_000)
+        body = _build_consolidated_comment([huge])[0]
+        assert body.count("<details>") == body.count("</details>")
+
+    def test_reasoning_is_dropped_before_the_answer_is_cut(self):
+        response = OwlResponse(
+            model_name="reasoner",
+            source="deepseek",
+            text="the short answer",
+            reasoning="y" * 200_000,
+        )
+        body = _build_consolidated_comment([response])[0]
+        assert len(body) <= self.GITHUB_HARD_LIMIT
+        assert "the short answer" in body
+        assert "yyyy" not in body
+
+    def test_several_huge_responses_all_fit(self):
+        responses = [
+            OwlResponse(model_name=f"m{i}", source="llm", text="z" * 100_000) for i in range(4)
+        ]
+        bodies = _build_consolidated_comment(responses)
+        assert len(bodies) == 4
+        for body in bodies:
+            assert len(body) <= self.GITHUB_HARD_LIMIT
+
+    def test_normal_responses_are_untouched(self):
+        responses = [OwlResponse(model_name="m", source="llm", text="a normal answer")]
+        body = _build_consolidated_comment(responses)[0]
+        assert "truncated" not in body
+        assert "a normal answer" in body

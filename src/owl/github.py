@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 
 import httpx
 
@@ -12,6 +13,8 @@ GITHUB_API = "https://api.github.com"
 
 # GitHub comment body limit is 65536 chars; leave headroom
 _MAX_COMMENT_CHARS = 62_000
+
+_TRUNCATION_NOTE = "\n\n_[truncated: response exceeded GitHub's comment size limit]_"
 
 
 def _get_token() -> str:
@@ -69,10 +72,46 @@ def _format_response_section(response: OwlResponse) -> str:
     return "\n".join(lines)
 
 
-def _build_consolidated_comment(
-    responses: list[OwlResponse],
-    prompt: str,
-) -> list[str]:
+def _fit_section(response: OwlResponse, budget: int) -> str:
+    """Render a response as a section that fits within ``budget`` characters.
+
+    Splitting between sections is not enough on its own: one response longer
+    than a whole comment can never be placed, and GitHub rejects the
+    oversized body with a 422 that loses every other response with it.
+
+    Content is shed in order of how much it costs the reader: reasoning is
+    supplementary, citations are recoverable, the answer itself is trimmed
+    last.  Each step re-renders rather than slicing the markup, so the
+    ``<details>`` tags stay balanced.
+    """
+    section = _format_response_section(response)
+    if len(section) <= budget:
+        return section
+
+    if response.reasoning:
+        response = replace(response, reasoning=None)
+        section = _format_response_section(response)
+        if len(section) <= budget:
+            return section
+
+    if response.citations:
+        response = replace(response, citations=None)
+        section = _format_response_section(response)
+        if len(section) <= budget:
+            return section
+
+    overhead = len(section) - len(response.text)
+    keep = max(budget - overhead - len(_TRUNCATION_NOTE), 0)
+    section = _format_response_section(
+        replace(response, text=response.text[:keep] + _TRUNCATION_NOTE)
+    )
+
+    # Pathological case: the wrapper alone does not fit. Nothing renders
+    # usefully at this size, but the body must still be postable.
+    return section if len(section) <= budget else section[:budget]
+
+
+def _build_consolidated_comment(responses: list[OwlResponse]) -> list[str]:
     """Build one or more comment bodies with all responses collapsed.
 
     Returns a list of comment bodies.  Usually one, but splits into
@@ -101,8 +140,10 @@ def _build_consolidated_comment(
     footer_lines.append("*Posted by [Parliament of Owls](https://github.com/joelio/owl)*")
     footer = "\n".join(footer_lines)
 
-    # Build response sections
-    sections = [_format_response_section(r) for r in success]
+    # Every section must be placeable in a comment of its own, so cap each
+    # one at what is left after the header and footer are accounted for.
+    section_budget = _MAX_COMMENT_CHARS - len(header) - len(footer)
+    sections = [_fit_section(r, section_budget) for r in success]
 
     # Try to fit everything in one comment
     combined = header + "\n".join(sections) + footer
@@ -171,7 +212,7 @@ async def post_responses_to_github(
         body = f"## 🦉 Parliament of Owls Query\n\n{prompt}"
         issue_number = await create_issue(repo, title, body)
 
-    comment_bodies = _build_consolidated_comment(responses, prompt)
+    comment_bodies = _build_consolidated_comment(responses)
     for comment_body in comment_bodies:
         await post_comment(repo, issue_number, comment_body)
 
