@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 
 from .base import OwlResponse, Provider
 from .errors import describe_error
+
+logger = logging.getLogger(__name__)
 
 
 class LlmProvider(Provider):
@@ -33,6 +36,7 @@ class LlmProvider(Provider):
                 elapsed_seconds=round(elapsed, 1),
             )
         except Exception as e:
+            logger.exception("llm provider (%s) failed", self.model_id)
             return OwlResponse(
                 model_name=self.model_id,
                 source="llm",

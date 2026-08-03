@@ -59,3 +59,59 @@ class TestDescribeError:
 
     def test_empty_message_falls_back_to_type_name(self):
         assert describe_error(httpx.ReadTimeout("")) == "ReadTimeout"
+
+
+class TestResponseDetail:
+    """The status line says a request failed; the body says why."""
+
+    def _error(self, status: int, **response_kwargs) -> httpx.HTTPStatusError:
+        request = httpx.Request("POST", "https://example.test/v1/chat")
+        response = httpx.Response(status, request=request, **response_kwargs)
+        return httpx.HTTPStatusError("boom", request=request, response=response)
+
+    def test_openai_style_error_message_is_surfaced(self):
+        exc = self._error(
+            400,
+            json={"error": {"message": "Invalid model 'o3-deep-research'", "type": "invalid"}},
+        )
+        message = describe_error(exc)
+        assert "400" in message
+        assert "Invalid model 'o3-deep-research'" in message
+
+    def test_top_level_message_is_surfaced(self):
+        assert "quota exhausted" in describe_error(
+            self._error(429, json={"message": "quota exhausted"})
+        )
+
+    def test_string_error_field_is_surfaced(self):
+        assert "bad request" in describe_error(self._error(400, json={"error": "bad request"}))
+
+    def test_non_json_body_falls_back_to_raw_text(self):
+        assert "upstream timeout" in describe_error(self._error(504, text="upstream timeout"))
+
+    def test_empty_body_gives_status_only(self):
+        assert describe_error(self._error(503)) == "HTTP 503 from https://example.test/v1/chat"
+
+    def test_long_body_is_truncated(self):
+        message = describe_error(self._error(400, text="x" * 5000))
+        assert message.endswith("...")
+        assert len(message) < 500
+
+    def test_detail_is_redacted(self):
+        exc = self._error(401, json={"error": {"message": f"bad key at ?key={SECRET}"}})
+        assert SECRET not in describe_error(exc)
+
+
+class TestLoggingIsQuietByDefault:
+    """Provider failures are reported as error panels.
+
+    Python's logging.lastResort handler prints WARNING-and-above records,
+    tracebacks included, whenever no handler is configured. The package
+    installs a NullHandler so those tracebacks stay behind `owl -v`.
+    """
+
+    def test_owl_logger_has_a_handler(self):
+        import logging
+
+        handlers = logging.getLogger("owl").handlers
+        assert any(isinstance(h, logging.NullHandler) for h in handlers)

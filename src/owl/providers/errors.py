@@ -45,10 +45,55 @@ def redact(text: str) -> str:
     return _CREDENTIAL_RE.sub(rf"\g<1>{REDACTED}", text)
 
 
+_MAX_DETAIL_CHARS = 300
+
+
+def _truncate(text: str) -> str:
+    text = " ".join(text.split())
+    if len(text) <= _MAX_DETAIL_CHARS:
+        return text
+    return text[:_MAX_DETAIL_CHARS] + "..."
+
+
+def response_detail(response: httpx.Response) -> str:
+    """Pull the human-readable reason out of an error response body.
+
+    The status line alone says a request failed but not why. Every provider
+    owl calls returns the reason in the body, and all of them use some
+    variant of ``{"error": {"message": ...}}``, so try that shape first and
+    fall back to the raw body.
+    """
+    try:
+        body = response.text
+    except Exception:  # body was never read, e.g. a streamed response
+        return ""
+
+    if not body.strip():
+        return ""
+
+    try:
+        data = response.json()
+    except ValueError:
+        return _truncate(body)
+
+    if isinstance(data, dict):
+        error = data.get("error")
+        if isinstance(error, dict) and error.get("message"):
+            return _truncate(str(error["message"]))
+        if isinstance(error, str) and error:
+            return _truncate(error)
+        if data.get("message"):
+            return _truncate(str(data["message"]))
+
+    return _truncate(body)
+
+
 def describe_error(exc: BaseException) -> str:
     """Return a short, credential-free description of a provider failure."""
     if isinstance(exc, httpx.HTTPStatusError):
-        return redact(f"HTTP {exc.response.status_code} from {exc.request.url}")
+        summary = f"HTTP {exc.response.status_code} from {exc.request.url}"
+        detail = response_detail(exc.response)
+        return redact(f"{summary}: {detail}" if detail else summary)
 
     message = redact(str(exc)).strip()
     return message or exc.__class__.__name__
