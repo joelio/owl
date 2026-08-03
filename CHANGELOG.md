@@ -1,19 +1,31 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (2026-08-03)
 
-### Changed
-- Refactored the HTTP-based providers (OpenAI, Perplexity, DeepSeek, xAI) onto a shared `HttpProvider` base that centralises the API-key check, request/retry/timing flow, response parsing, and error logging. Each provider now only declares its request shape and how to read the reply.
-
-### Added
-- Provider failures are now logged with a stack trace (`logger.exception`) instead of being silently swallowed into an error string.
-- Malformed/unexpected API responses now produce a clear error (with a payload snippet) instead of a raw `KeyError`/`IndexError`.
+### Security
+- The Gemini API key is no longer sent as a `?key=` query parameter. httpx puts the full request URL into `str(HTTPStatusError)`, that string was used as the error text, and error text is posted to GitHub issues — so a Gemini auth failure during `owl ask --gh owner/repo` could publish the key. It now travels in the `x-goog-api-key` header, and all error text passes through a redaction step that masks credential-bearing query parameters.
 
 ### Fixed
-- xAI provider now sends the configured model instead of a hardcoded `grok-4.1-fast`; friendly name `grok-agentic` maps to a real API id, and any other name passes through.
-- Transient failures (429/502/503 and timeouts) are now retried via `with_retry` across all HTTP providers (OpenAI, Perplexity, DeepSeek, xAI, Gemini). The retry helper existed but was never wired in.
-- GitHub issue/comment requests now set a 30s timeout so they can no longer hang indefinitely.
-- Gemini deep-research polling is now bounded by an overall wall-clock budget (`MAX_RESEARCH_SECONDS`, 10 min) rather than a raw attempt count, and each poll is retried on transient failures so a brief blip no longer discards in-progress research.
+- OpenAI deep research now works at all. It was sending the `web_search` tool, which deep research models reject with a 400, so `o3-deep-research` and `o4-mini-deep-research` never returned an answer. It now sends `web_search_preview`, runs the request in background mode, and polls to completion within a 30-minute budget rather than blocking on a 5-minute request timeout.
+- Console markup no longer leaks into terminal output. Labels were built as `[dim]Reasoning:[/dim]` and handed to `Markdown()`, which does not parse console markup, so the tags were printed verbatim on every response carrying reasoning or citations.
+- Error panels no longer swallow bracketed text. Errors were interpolated into a markup string, so an API payload snippet containing `[...]` had it parsed away as a style tag.
+- Responses too large for one GitHub comment are truncated instead of being posted at full size. GitHub rejects an oversized body with a 422, and because responses are posted in one pass, a single huge answer previously lost them all.
+- `--issue` without `--gh` is now rejected rather than silently ignored.
+- xAI provider sends the configured model instead of a hardcoded `grok-4.1-fast`; friendly name `grok-agentic` maps to a real API id, and any other name passes through.
+- Transient failures (429/502/503 and timeouts) are retried via `with_retry` across all HTTP providers. The retry helper existed but was never wired in.
+- GitHub issue/comment requests set a 30s timeout so they can no longer hang indefinitely.
+- Gemini deep research polling is bounded by an overall wall-clock budget (`MAX_RESEARCH_SECONDS`, 10 min) rather than a raw attempt count, and each poll is retried on transient failures so a brief blip no longer discards in-progress research.
+
+### Added
+- `-v` / `--verbose` shows provider stack traces and retry activity on stderr.
+- Error messages now carry the reason the API gave (invalid model, exhausted quota) rather than the bare status line.
+- Malformed or unexpected API responses produce a clear error with a payload snippet instead of a raw `KeyError` / `IndexError`.
+
+### Changed
+- Provider stack traces are no longer printed by default. Nothing configured logging, so records reached `logging.lastResort` and every failure dumped a traceback on top of the error panel. A `NullHandler` now suppresses that; use `-v` to get it back. This reverses part of the unreleased behaviour that followed the previous change.
+- Refactored the HTTP-based providers (OpenAI, Perplexity, DeepSeek, xAI) onto a shared `HttpProvider` base that centralises the API-key check, request/retry/timing flow, response parsing and error logging. Each provider now declares only its request shape and how to read the reply.
+- `ruff` is pinned to a compatible release and the lint rules are selected explicitly. Ruff's default rule set expands between minor versions, which had turned CI red with no code change.
+- The version is single-sourced from `owl.__version__`; `pyproject.toml` reads it via `[tool.setuptools.dynamic]`.
 
 ## 0.1.0 (2026-03-05)
 

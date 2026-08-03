@@ -1,10 +1,12 @@
 [build-system]
-requires = ["setuptools>=68.0", "setuptools-scm>=8.0"]
+requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "parliament-of-owls"
-version = "0.1.0"
+# Single-sourced from owl.__version__ so the package metadata and
+# `owl --version` cannot drift apart.
+dynamic = ["version"]
 description = "Query multiple LLMs and deep research APIs in parallel, post results to GitHub Issues"
 readme = "README.md"
 license = {text = "MIT"}
@@ -55,6 +57,9 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "owl.__version__"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

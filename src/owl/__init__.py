@@ -2,7 +2,9 @@
 
 import logging
 
-__version__ = "0.1.0"
+# The single source of truth for the version; pyproject.toml reads it from
+# here via [tool.setuptools.dynamic].
+__version__ = "0.2.0"
 
 # Without a handler, logging falls back to logging.lastResort, which prints
 # every WARNING-and-above record (tracebacks included) straight to stderr.

@@ -12,6 +12,7 @@ CLI tool that queries multiple LLMs in parallel ("a council") and displays rich 
 ```
 owl ask [PROMPT]           # Query all council members in parallel
   -f, --file FILE_PATH     # Read prompt from file
+  --format LEVEL           # brief | standard (default) | detailed
   --gh OWNER/REPO          # Post responses to GitHub Issues
   --issue NUMBER           # Post to existing issue (requires --gh)
   # Also accepts stdin: echo "question" | owl ask
@@ -20,7 +21,14 @@ owl council                # Interactive TUI to select council members
 owl council-list           # Show current council members
 owl models                 # Show all available models
 owl --version
+
+# Group-level flag, goes before the subcommand:
+owl -v ask "..."           # Provider stack traces and retries on stderr
 ```
+
+`--format` sets a word-count target (brief 100-200, standard 250-400,
+detailed 600-1000). It is ignored by `openai-deep` and `google-deep`, which
+always use the fixed deep research report structure.
 
 ## Config
 
@@ -74,6 +82,7 @@ src/owl/
     deepseek.py      # DeepSeek Chat Completions
     xai.py           # xAI Chat Completions + Agent Tools
     retry.py         # Auto-retry on 429/502/503 (2 retries, 2s/5s delays)
+    errors.py        # Credential-safe error text (redaction + response body)
 ```
 
 ## Key Patterns
@@ -83,6 +92,13 @@ src/owl/
 - **OwlResponse:** Dataclass with `model_name`, `source`, `text`, `error`, `citations`, `reasoning`
 - **New providers:** Extend `Provider` base class in `providers/`, register in `registry.py`, add model entry in `models.py`
 - **GitHub posting:** Uses `GITHUB_TOKEN` env var or `gh auth token` from gh CLI
+- **Credential safety:** API keys go in headers, never query strings. All error
+  text passes through `errors.describe_error()`, which redacts credential-bearing
+  query params. Errors are printed *and* posted to GitHub, so a leak here is public
+- **Background jobs:** `openai-deep` and `google-deep` start a job and poll. Override
+  `HttpProvider.follow_up()` for APIs whose first reply is a job handle
+- **Quiet by default:** `owl/__init__.py` installs a NullHandler so `logger.exception`
+  does not reach stderr via `logging.lastResort`. `owl -v` turns it back on
 
 ## GitHub Integration
 
@@ -91,7 +107,12 @@ owl ask "question" --gh owner/repo            # Create new issue
 owl ask "question" --gh owner/repo --issue 42  # Post to existing issue
 ```
 
-Each response posted as a separate comment with model name heading, optional reasoning in collapsed `<details>`, and citations as bullet list.
+All responses go in a single consolidated comment, each collapsed into its own
+`<details>` block with the model name, optional reasoning in a nested
+`<details>`, and citations as a bullet list. Failed members are listed in an
+Errors section in the footer. If the combined body would exceed GitHub's
+65536-character limit it is split across several comments, and any single
+response too large for one comment is truncated to fit.
 
 ## Common Tasks
 
@@ -99,6 +120,8 @@ Each response posted as a separate comment with model name heading, optional rea
 
 **Debug missing models:** Run `owl models`. Deep research models need env vars set. Standard models need llm plugins installed (e.g. `llm install llm-claude-4`).
 
-**Increase timeout:** Default 300s for deep research, 30s polling interval for Gemini. Configured in individual provider files.
+**Increase timeout:** `HttpProvider.timeout` is 300s for single-POST providers.
+Polling budgets live in the provider: `openai_deep.MAX_RESEARCH_SECONDS` (1800s)
+and `google_deep.MAX_RESEARCH_SECONDS` (600s), both with a 5s `POLL_INTERVAL`.
 
 **Test a single provider:** Check the provider's env var is set, then add only that model to config and run `owl ask "test"`.
