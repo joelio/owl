@@ -152,12 +152,33 @@ export GITHUB_TOKEN=ghp_...
 owl ask "prompt"                          # Query all council members
 owl ask -f prompt.md                      # Read prompt from file
 cat prompt.txt | owl ask                  # Read from stdin
+owl ask "prompt" --format brief           # Shorter answers (see below)
 owl ask "prompt" --gh owner/repo          # Create new issue with responses
 owl ask "prompt" --gh owner/repo --issue 42  # Post to existing issue
 owl council                               # Interactive TUI to select council members
 owl council-list                          # Show current council
 owl models                                # Show all available models
+owl -v ask "prompt"                       # Show provider stack traces on stderr
 ```
+
+### Response length
+
+`--format` sets a word-count target in the system prompt:
+
+| Value | Target |
+|-------|--------|
+| `brief` | 100-200 words |
+| `standard` (default) | 250-400 words |
+| `detailed` | 600-1000 words |
+
+It has no effect on `openai-deep` and `google-deep` members, which use a
+fixed deep research report structure regardless of the flag.
+
+### Troubleshooting
+
+Provider failures appear as red panels with the reason reported by the API.
+For the underlying stack trace and retry activity, add `-v` before the
+subcommand: `owl -v ask "prompt"`.
 
 ## Council Configuration
 
@@ -189,7 +210,7 @@ Each provider implements deep research differently:
 
 | Provider | What Happens | API |
 |----------|-------------|-----|
-| **OpenAI** | Separate model (`o3-deep-research`) that searches the web and synthesizes reports | Responses API |
+| **OpenAI** | Separate model (`o3-deep-research`) that searches the web and synthesises reports. Runs as a background job that owl polls to completion | Responses API |
 | **Perplexity** | Separate model (`sonar-deep-research`) with multi-step retrieval and citations | `/chat/completions` |
 | **Google Gemini** | Async agent that plans, searches, reads, and reasons (can take minutes) | Interactions API |
 | **DeepSeek** | Reasoning model with chain-of-thought (`deepseek-reasoner`) | `/chat/completions` |
@@ -201,7 +222,12 @@ Each provider implements deep research differently:
 - The `~/.owl/config.yaml` only stores model names and sources, no secrets
 - GitHub tokens are read from `gh` CLI auth or `GITHUB_TOKEN` env var
 - All API calls use HTTPS
-- Deep research providers use 5-minute timeouts with retry on transient failures
+- Keys are sent as request headers, never as URL query parameters, and any
+  credential-bearing query string is redacted from error text before it is
+  printed or posted to GitHub
+- Chat-completion providers use a 5-minute request timeout with retry on
+  transient failures. The two polling providers run longer: OpenAI deep
+  research allows 30 minutes, Gemini deep research 10
 
 ## Claude Code Plugin
 
@@ -245,6 +271,11 @@ pytest tests/ -v
 ruff check src/ tests/
 ruff format src/ tests/
 ```
+
+`ruff` is pinned to a compatible release in `pyproject.toml`, and the lint
+rules are selected explicitly under `[tool.ruff.lint]`. Both are deliberate:
+ruff's default rule set changes between minor versions, which otherwise
+turns CI red without anyone touching the code.
 
 ## Contributing
 
