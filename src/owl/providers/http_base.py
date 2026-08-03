@@ -79,6 +79,16 @@ class HttpProvider(Provider):
         """Return a dict with ``text`` and optional ``citations``/``reasoning``."""
         raise NotImplementedError
 
+    async def follow_up(
+        self, client: httpx.AsyncClient, data: dict[str, Any], api_key: str
+    ) -> dict[str, Any]:
+        """Hook for APIs whose first reply is a job handle rather than an answer.
+
+        Runs on the still-open client, before :meth:`parse_response`.  The
+        default is a no-op, which is the single-POST case.
+        """
+        return data
+
     async def query(self, prompt: str, system_prompt: str | None = None) -> OwlResponse:
         api_key = os.environ.get(self.api_key_env, "")
         if not api_key:
@@ -100,7 +110,7 @@ class HttpProvider(Provider):
                     return r
 
                 resp = await with_retry(_do_request)
-                data = resp.json()
+                data = await self.follow_up(client, resp.json(), api_key)
 
             parsed = self.parse_response(data)
             return OwlResponse(
