@@ -8,6 +8,9 @@
   - Skipped when fewer than two members answered, rather than spending a request restating a single answer. Deep research models are never chosen as the default arbiter: slow and costly for a reconciling job.
 
 ### Fixed
+- `owl council` no longer tracebacks on Ctrl-D or Ctrl-C; both cancel and leave the council unchanged.
+- `owl council` is usable with a large catalogue. With OpenRouter installed the list runs to several hundred models, and every keystroke reprinted all of them. The table is now capped at 30 rows with a count of what is hidden, and `/text` filters by model name or source. `a` and `n` act on what is shown, so `/:free` then `a` selects the free models.
+
 - Realigned three providers with their current APIs after checking each contract against primary vendor documentation. Combined with the OpenAI fix in 0.2.0, four of the five deep research providers were calling endpoints, models or parameters that no longer exist.
   - **DeepSeek**: `deepseek-reasoner` was discontinued on 2026-07-24 along with `deepseek-chat`. The default is now `deepseek-v4-flash` with `thinking` enabled explicitly, since V4 makes thinking opt-in where the old reasoner model had it on implicitly. The retired name is remapped rather than left to fail.
   - **xAI**: the provider sent `grok-4.1-fast`, which is not a current model id, to `/v1/chat/completions` with `tools: [{"type": "web_search"}]` and a `chain_limit` parameter that has never existed in the xAI API. Chat Completions is documented as a deprecated endpoint supporting function calling only, so the agentic search this provider exists for was never reachable. It now posts to the Responses API as `grok-4.5` with server-side `web_search` and `x_search` tools.

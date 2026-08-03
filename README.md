@@ -250,8 +250,13 @@ Run `owl council` to open the interactive selector:
  7  ☐ deepseek-v4-flash         deepseek      DeepSeek V4 Flash (thinking)
  8  ☐ grok-agentic              xai           Grok 4.5 agentic search
 
-Enter number to toggle, a=all, n=none, s=save, q=quit:
+Number to toggle, /text=filter, a=all shown, n=none shown, s=save, q=quit:
 ```
+
+The table caps at 30 rows. With OpenRouter installed the catalogue runs to
+several hundred models, so use `/text` to filter by model name or source —
+`/:free` then `a` selects the free models, since `a` and `n` act on what is
+shown rather than the whole list.
 
 Saved to `~/.owl/config.yaml`.
 
