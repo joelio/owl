@@ -13,6 +13,8 @@ CLI tool that queries multiple LLMs in parallel ("a council") and displays rich 
 owl ask [PROMPT]           # Query all council members in parallel
   -f, --file FILE_PATH     # Read prompt from file
   --format LEVEL           # brief | standard (default) | detailed
+  -s, --synthesise         # Arbiter model reconciles the answers into one
+  --arbiter MODEL          # Synthesise with a specific model (implies -s)
   --gh OWNER/REPO          # Post responses to GitHub Issues
   --issue NUMBER           # Post to existing issue (requires --gh)
   # Also accepts stdin: echo "question" | owl ask
@@ -44,6 +46,11 @@ council:
     source: openai-deep
   - name: sonar-deep-research
     source: perplexity
+
+# Optional. Used by --synthesise; falls back to the first `llm` member.
+arbiter:
+  name: claude-sonnet-4.6
+  source: llm
 ```
 
 No API keys in config. Standard models use `llm keys set`; deep research APIs use env vars.
@@ -68,6 +75,7 @@ src/owl/
   cli/main.py        # Click CLI entry point
   config.py          # YAML config load/save
   council.py         # Async parallel dispatch (asyncio.gather, 0.3s stagger)
+  synthesis.py       # Arbiter pass that reconciles the council's answers
   models.py          # Model discovery (llm plugins + deep research)
   output.py          # Rich terminal formatting
   github.py          # GitHub Issues integration
@@ -99,6 +107,10 @@ src/owl/
   `HttpProvider.follow_up()` for APIs whose first reply is a job handle
 - **Quiet by default:** `owl/__init__.py` installs a NullHandler so `logger.exception`
   does not reach stderr via `logging.lastResort`. `owl -v` turns it back on
+- **Synthesis:** `--synthesise` sends every answer in full to an arbiter model, which is
+  told to weigh reasoning rather than count votes. Skipped when fewer than two members
+  answered. The arbiter defaults to the first `llm` council member, never a deep research
+  one, since those are slow and costly for a reconciling job
 
 ## GitHub Integration
 

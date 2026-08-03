@@ -111,7 +111,10 @@ def _fit_section(response: OwlResponse, budget: int) -> str:
     return section if len(section) <= budget else section[:budget]
 
 
-def _build_consolidated_comment(responses: list[OwlResponse]) -> list[str]:
+def _build_consolidated_comment(
+    responses: list[OwlResponse],
+    synthesis: OwlResponse | None = None,
+) -> list[str]:
     """Build one or more comment bodies with all responses collapsed.
 
     Returns a list of comment bodies.  Usually one, but splits into
@@ -125,9 +128,25 @@ def _build_consolidated_comment(responses: list[OwlResponse]) -> list[str]:
         "",
         f"**{len(success)} of {len(responses)} members responded**",
         "",
-        "---",
-        "",
     ]
+
+    # The synthesis sits above the fold, uncollapsed: it is the answer, and
+    # the per-model sections below are the working.
+    if synthesis is not None and not synthesis.error and synthesis.text.strip():
+        header_lines.extend(
+            [
+                "---",
+                "",
+                f"### ⚖️ Synthesis <sub>by {synthesis.model_name}</sub>",
+                "",
+                synthesis.text.strip(),
+                "",
+                "<sub>Reconciled from the individual answers below.</sub>",
+                "",
+            ]
+        )
+
+    header_lines.extend(["---", ""])
     header = "\n".join(header_lines)
 
     footer_lines = ["", "---"]
@@ -205,6 +224,7 @@ async def post_responses_to_github(
     repo: str,
     issue_number: int | None = None,
     prompt: str = "",
+    synthesis: OwlResponse | None = None,
 ) -> int:
     """Post all council responses to a GitHub issue as collapsed sections."""
     if issue_number is None:
@@ -212,7 +232,7 @@ async def post_responses_to_github(
         body = f"## 🦉 Parliament of Owls Query\n\n{prompt}"
         issue_number = await create_issue(repo, title, body)
 
-    comment_bodies = _build_consolidated_comment(responses)
+    comment_bodies = _build_consolidated_comment(responses, synthesis)
     for comment_body in comment_bodies:
         await post_comment(repo, issue_number, comment_body)
 

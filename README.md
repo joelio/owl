@@ -153,6 +153,8 @@ owl ask "prompt"                          # Query all council members
 owl ask -f prompt.md                      # Read prompt from file
 cat prompt.txt | owl ask                  # Read from stdin
 owl ask "prompt" --format brief           # Shorter answers (see below)
+owl ask "prompt" --synthesise             # Add an arbiter's combined answer
+owl ask "prompt" --arbiter gpt-5          # Synthesise with a specific model
 owl ask "prompt" --gh owner/repo          # Create new issue with responses
 owl ask "prompt" --gh owner/repo --issue 42  # Post to existing issue
 owl council                               # Interactive TUI to select council members
@@ -160,6 +162,55 @@ owl council-list                          # Show current council
 owl models                                # Show all available models
 owl -v ask "prompt"                       # Show provider stack traces on stderr
 ```
+
+### Synthesis
+
+By default owl shows you every answer and leaves you to reconcile them. With
+`--synthesise`, one more model reads all of them and produces a single
+answer:
+
+```bash
+owl ask "Redis or Memcached for session storage?" --synthesise
+owl ask "..." --arbiter gpt-5          # pick the arbiter explicitly
+```
+
+```
+╭─ ⚖️  Synthesis judge (3.3s) ──────────────────────────────────────────────╮
+│ ANSWER: Use Redis. It offers persistence and richer data structures...   │
+│                                                                          │
+│ CONFIDENCE: Moderate. Two of three members reached this independently,   │
+│ and the reasoning about durability is the load-bearing part.             │
+│                                                                          │
+│ DISAGREEMENT: One member preferred Memcached for simplicity...           │
+│                                                                          │
+│ WATCH OUT FOR: The persistence claim was sourced by only one member.     │
+╰──────────────────────────────────────────────────────────────────────────╯
+```
+
+The arbiter is given every answer in full, including any reasoning, and is
+told to weigh the reasoning rather than count votes. A council can agree and
+still be wrong, and the argument in a dissenting answer is often what shows
+it, so agreement is treated as evidence rather than as the result. The
+individual answers are still printed underneath.
+
+Set a default arbiter in `~/.owl/config.yaml`:
+
+```yaml
+council:
+  - name: gpt-5
+    source: llm
+  - name: claude-sonnet-4.6
+    source: llm
+
+arbiter:
+  name: claude-sonnet-4.6
+  source: llm
+```
+
+Without one, owl uses the first `llm` member of your council. Deep research
+members are skipped as arbiters: they are slow and expensive for what is a
+reconciling job. Synthesis is skipped entirely when fewer than two members
+answered, rather than spending a request to restate a single answer.
 
 ### Response length
 

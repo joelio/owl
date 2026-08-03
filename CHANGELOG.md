@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+- `--synthesise` (`-s`) adds an arbiter pass: one model reads every council answer in full and produces a single reconciled answer, printed above the individual responses and posted uncollapsed at the top of the GitHub comment. `--arbiter MODEL` picks the model explicitly; otherwise an optional `arbiter:` config entry is used, falling back to the first `llm` council member.
+  - The arbiter is told to weigh reasoning rather than count votes, and to report confidence, material disagreement, and claims only one member made. Practitioners report that majority voting plateaus while synthesis over full reasoning recovers correct answers even when a council agrees on a wrong one, so agreement is treated as evidence to weigh rather than as the result.
+  - Skipped when fewer than two members answered, rather than spending a request restating a single answer. Deep research models are never chosen as the default arbiter: slow and costly for a reconciling job.
+
 ### Fixed
 - Realigned three providers with their current APIs after checking each contract against primary vendor documentation. Combined with the OpenAI fix in 0.2.0, four of the five deep research providers were calling endpoints, models or parameters that no longer exist.
   - **DeepSeek**: `deepseek-reasoner` was discontinued on 2026-07-24 along with `deepseek-chat`. The default is now `deepseek-v4-flash` with `thinking` enabled explicitly, since V4 makes thinking opt-in where the old reasoner model had it on implicitly. The retired name is remapped rather than left to fail.
