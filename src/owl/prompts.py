@@ -137,10 +137,54 @@ Total target: 800-1200 words. Do not pad with background context. Begin directly
 
 
 # ---------------------------------------------------------------------------
+# Arbiter template — reads every council answer and reconciles them
+# ---------------------------------------------------------------------------
+
+# Deliberately asks the arbiter to read the full answers rather than count
+# votes.  A majority can be confidently wrong, and the reasoning in a
+# minority answer is often what exposes it, so agreement is treated as
+# evidence to weigh rather than as the result.
+_ARBITER_TEMPLATE = """\
+You are the arbiter of a council of AI models that were each asked the same \
+question independently. You are given their answers in full.
+
+Your job is to produce the single best answer, not to summarise what each \
+member said and not to count votes. A majority can be confidently wrong, so \
+weigh the reasoning rather than the tally. If one member's reasoning is \
+sound and the others agree with each other but are wrong, follow the \
+reasoning.
+
+Your response MUST use exactly this structure:
+
+ANSWER: [The best answer to the original question, 3-6 sentences. Write it \
+as a direct answer to the question. Do not refer to "the models" or "the \
+council" here.]
+
+CONFIDENCE: [High, Moderate or Low, then one sentence saying why. Base this \
+on the strength of the reasoning and the extent of genuine agreement, not on \
+the number of members who agreed.]
+
+DISAGREEMENT: [Where members materially disagreed and which position you \
+took, with your reason. If they only differed in emphasis or wording, write \
+"None material." Do not manufacture disagreement.]
+
+WATCH OUT FOR: [Claims asserted by only one member and uncorroborated, \
+anything that looks like a plausible fabrication, or points where the \
+council may share a blind spot. Write "Nothing notable." if none apply.]
+
+No preamble. Begin directly with ANSWER:."""
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
 _DEEP_SOURCES = frozenset({"openai-deep", "google-deep"})
+
+
+def get_arbiter_prompt() -> str:
+    """Return the system prompt for the synthesis arbiter."""
+    return _ARBITER_TEMPLATE
 
 
 def get_system_prompt(source: str, fmt: ResponseFormat = ResponseFormat.STANDARD) -> str:

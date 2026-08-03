@@ -10,12 +10,13 @@ import click
 from rich.console import Console
 
 from .. import __version__
-from ..config import load_config
+from ..config import CouncilMember, load_config
 from ..council import convene
 from ..github import post_responses_to_github
 from ..models import discover_all_models
 from ..output import print_responses
 from ..prompts import ResponseFormat
+from ..synthesis import synthesise as synthesise_responses
 from ..tui import run_council_selector
 
 console = Console()
@@ -66,12 +67,28 @@ def cli(verbose: bool) -> None:
     type=click.Choice(["brief", "standard", "detailed"], case_sensitive=False),
     help="Response length: brief (~150w), standard (~300w), detailed (~800w)",
 )
+@click.option(
+    "-s",
+    "--synthesise",
+    "--synthesize",
+    "synthesise",
+    is_flag=True,
+    help="Have an arbiter model reconcile the answers into one",
+)
+@click.option(
+    "--arbiter",
+    "arbiter_name",
+    default=None,
+    help="Model to synthesise with (implies --synthesise). Defaults to config",
+)
 def ask(
     prompt: str | None,
     file_path: str | None,
     github_repo: str | None,
     issue_number: int | None,
     response_format: str,
+    synthesise: bool,
+    arbiter_name: str | None,
 ) -> None:
     """Ask the council a question. Reads from --file, stdin pipe, or argument."""
     if issue_number is not None and not github_repo:
@@ -105,12 +122,33 @@ def ask(
     console.print(f"[dim]Querying {len(config.council)} council members ({fmt.value})...[/dim]")
 
     responses = asyncio.run(convene(prompt, config, fmt=fmt))
-    print_responses(responses, console)
+
+    synthesis = None
+    if synthesise or arbiter_name:
+        arbiter = (
+            CouncilMember(name=arbiter_name, source="llm")
+            if arbiter_name
+            else config.resolve_arbiter()
+        )
+        if arbiter is None:
+            console.print(
+                "[yellow]No arbiter available.[/yellow] Add an [bold]arbiter:[/bold] entry to "
+                "your config or pass [bold]--arbiter MODEL[/bold]."
+            )
+        else:
+            console.print(f"[dim]Synthesising with {arbiter.name}...[/dim]")
+            synthesis = asyncio.run(synthesise_responses(prompt, responses, arbiter))
+            if synthesis is None:
+                console.print(
+                    "[yellow]Nothing to synthesise[/yellow] — fewer than two members answered."
+                )
+
+    print_responses(responses, console, synthesis=synthesis)
 
     if github_repo:
         console.print(f"\n[dim]Posting to {github_repo}...[/dim]")
         result_issue = asyncio.run(
-            post_responses_to_github(responses, github_repo, issue_number, prompt)
+            post_responses_to_github(responses, github_repo, issue_number, prompt, synthesis)
         )
         console.print(
             f"[green]✓ Posted to https://github.com/{github_repo}/issues/{result_issue}[/green]"

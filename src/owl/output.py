@@ -52,7 +52,11 @@ def _response_body(response: OwlResponse) -> RenderableType:
     return Group(*parts)
 
 
-def print_responses(responses: list[OwlResponse], console: Console | None = None) -> None:
+def print_responses(
+    responses: list[OwlResponse],
+    console: Console | None = None,
+    synthesis: OwlResponse | None = None,
+) -> None:
     """Print council responses to terminal with rich formatting."""
     console = console or Console()
 
@@ -64,6 +68,32 @@ def print_responses(responses: list[OwlResponse], console: Console | None = None
         f"[bold]🦉 Parliament of Owls — {len(success)} of {len(responses)} members responded[/bold]"
     )
     console.print()
+
+    # The synthesis leads: it is the answer the reader wants, and the
+    # individual responses below are the working behind it.
+    if synthesis is not None and not synthesis.error:
+        console.print(
+            Panel(
+                Markdown(synthesis.text),
+                title=f"⚖️  Synthesis [dim]{escape(synthesis.model_name)}[/dim]"
+                f"{_timing_badge(synthesis)}",
+                title_align="left",
+                border_style="green",
+                expand=True,
+            )
+        )
+        console.print()
+    elif synthesis is not None and synthesis.error:
+        console.print(
+            Panel(
+                Text(synthesis.error, style="red"),
+                title=f"⚖️  Synthesis [red]FAILED[/red] [dim]{escape(synthesis.model_name)}[/dim]",
+                title_align="left",
+                border_style="red",
+                expand=True,
+            )
+        )
+        console.print()
 
     for response in success:
         panel = Panel(
