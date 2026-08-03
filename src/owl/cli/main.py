@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import sys
 
 import click
@@ -28,8 +29,22 @@ _FORMAT_MAP = {
 
 @click.group()
 @click.version_option(version=__version__, prog_name="owl")
-def cli() -> None:
+@click.option(
+    "-v",
+    "--verbose",
+    is_flag=True,
+    help="Show provider stack traces and retry activity on stderr",
+)
+def cli(verbose: bool) -> None:
     """🦉 Parliament of Owls - Query multiple LLMs in parallel."""
+    if verbose:
+        # Scoped to owl's own logger rather than the root, so -v does not
+        # also switch on asyncio and httpx debug chatter.
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(logging.Formatter("%(levelname)s %(name)s: %(message)s"))
+        owl_logger = logging.getLogger("owl")
+        owl_logger.addHandler(handler)
+        owl_logger.setLevel(logging.DEBUG)
 
 
 @cli.command()
@@ -59,6 +74,9 @@ def ask(
     response_format: str,
 ) -> None:
     """Ask the council a question. Reads from --file, stdin pipe, or argument."""
+    if issue_number is not None and not github_repo:
+        raise click.UsageError("--issue requires --gh owner/repo.")
+
     if file_path:
         with open(file_path) as f:
             prompt = f.read().strip()

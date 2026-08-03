@@ -101,3 +101,20 @@ class TestCLI:
         monkeypatch.setattr("owl.cli.main.discover_all_models", list)
         result = runner.invoke(cli, ["models"])
         assert "No models found" in result.output
+
+
+class TestIssueRequiresRepo:
+    def test_issue_without_gh_is_rejected(self, runner):
+        result = runner.invoke(cli, ["ask", "hello", "--issue", "42"])
+        assert result.exit_code != 0
+        assert "--issue requires --gh" in result.output
+
+
+class TestVerboseFlag:
+    def test_verbose_is_accepted(self, runner):
+        result = runner.invoke(cli, ["-v", "council-list"])
+        assert result.exit_code == 0
+
+    def test_verbose_listed_in_help(self, runner):
+        result = runner.invoke(cli, ["--help"])
+        assert "--verbose" in result.output
