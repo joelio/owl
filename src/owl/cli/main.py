@@ -30,7 +30,6 @@ _FORMAT_MAP = {
 @click.version_option(version=__version__, prog_name="owl")
 def cli() -> None:
     """🦉 Parliament of Owls - Query multiple LLMs in parallel."""
-    pass
 
 
 @cli.command()

@@ -6,13 +6,13 @@ import pytest
 
 from owl.config import CouncilMember
 from owl.providers.base import OwlResponse
-from owl.providers.registry import get_provider
-from owl.providers.llm_provider import LlmProvider
-from owl.providers.openai_deep import OpenAIDeepProvider
-from owl.providers.perplexity import PerplexityProvider
 from owl.providers.deepseek import DeepSeekProvider
 from owl.providers.google_deep import GoogleDeepProvider
 from owl.providers.http_base import parse_chat_message
+from owl.providers.llm_provider import LlmProvider
+from owl.providers.openai_deep import OpenAIDeepProvider
+from owl.providers.perplexity import PerplexityProvider
+from owl.providers.registry import get_provider
 from owl.providers.xai import XAIProvider
 
 

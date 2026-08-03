@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-
 from owl.models import (
     DEEP_RESEARCH_KEY_MAP,
     DEEP_RESEARCH_MODELS,

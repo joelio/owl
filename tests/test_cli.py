@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-
 import pytest
 from click.testing import CliRunner
 
@@ -99,6 +98,6 @@ class TestCLI:
         assert captured_kwargs.get("fmt") == ResponseFormat.STANDARD
 
     def test_models_empty(self, runner, monkeypatch):
-        monkeypatch.setattr("owl.cli.main.discover_all_models", lambda: [])
+        monkeypatch.setattr("owl.cli.main.discover_all_models", list)
         result = runner.invoke(cli, ["models"])
         assert "No models found" in result.output
