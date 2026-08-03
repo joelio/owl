@@ -326,6 +326,7 @@ pip install -e ".[dev]"
 pytest tests/ -v
 ruff check src/ tests/
 ruff format src/ tests/
+mypy src/owl
 ```
 
 `ruff` is pinned to a compatible release in `pyproject.toml`, and the lint

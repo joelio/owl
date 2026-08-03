@@ -26,6 +26,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
@@ -53,6 +54,8 @@ dev = [
     # Pinned to a compatible release: ruff's default rule set and formatter
     # output both change between minor versions, which silently breaks CI.
     "ruff>=0.16,<0.17",
+    "mypy>=1.11",
+    "types-PyYAML",
 ]
 
 [tool.setuptools.packages.find]
@@ -60,6 +63,14 @@ where = ["src"]
 
 [tool.setuptools.dynamic]
 version = {attr = "owl.__version__"}
+
+[tool.mypy]
+python_version = "3.10"
+files = ["src/owl"]
+# The llm library ships no stubs, and httpx/rich are only partially typed.
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
