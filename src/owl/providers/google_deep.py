@@ -17,10 +17,13 @@ logger = logging.getLogger(__name__)
 
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
-# Newer agents also exist: deep-research-preview-04-2026 and
-# deep-research-max-preview-04-2026.  This one remains listed as valid.
-# https://ai.google.dev/api/interactions-api
-AGENT_ID = "deep-research-pro-preview-12-2025"
+# Agent ids, checked against https://ai.google.dev/gemini-api/docs/deep-research
+# on 2026-09-20: deep-research-preview-04-2026 is the documented default, and
+# deep-research-max-preview-04-2026 also exists. The older
+# deep-research-pro-preview-12-2025 is still listed but now appears once in the
+# docs against 63 hits for the 04-2026 agent.
+# Overridable so a new agent id does not need a release.
+AGENT_ID = os.environ.get("OWL_GEMINI_DEEP_RESEARCH_AGENT", "deep-research-preview-04-2026")
 
 POLL_INTERVAL = 5  # seconds between polls
 MAX_RESEARCH_SECONDS = 600  # overall wall-clock budget for the interaction (10 min)
