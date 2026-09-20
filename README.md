@@ -5,7 +5,7 @@
 <h1 align="center">Parliament of Owls</h1>
 
 <p align="center">
-  <em>Query multiple LLMs and deep research APIs in parallel.<br/>Post each response as a comment on a GitHub Issue.</em>
+  <em>Query multiple LLMs in parallel.<br/>Post each response, attributed to the model that gave it, on a GitHub Issue.</em>
 </p>
 
 <p align="center">
@@ -16,7 +16,7 @@
 
 ---
 
-Built on [Simon Willison's `llm`](https://github.com/simonw/llm) for standard model access, with direct API integrations for deep research endpoints. Supports dozens of free models via [OpenRouter](https://openrouter.ai).
+Built on [Simon Willison's `llm`](https://github.com/simonw/llm) for standard model access, plus a direct [OpenRouter](https://openrouter.ai) route so any OpenRouter model slug can sit on the council. Supports dozens of free models.
 
 ## Install
 
@@ -120,14 +120,41 @@ Sign up at [openrouter.ai](https://openrouter.ai) (no credit card required) and 
 
 Rate limits: ~20 req/min, ~200 req/day per free model. Owl staggers requests to stay within limits.
 
-### Deep Research APIs
+### OpenRouter (the recommended route)
 
-Deep research models use direct API calls (not `llm` plugins). Set their keys as environment variables:
+Any model on OpenRouter can be a council member. Set one key:
 
 ```bash
-export OPENAI_API_KEY=sk-...        # o3-deep-research, o4-mini-deep-research
-export PERPLEXITY_API_KEY=pplx-...  # sonar-deep-research
-export GOOGLE_API_KEY=AI...         # Gemini Deep Research Agent
+export OPENROUTER_API_KEY=sk-or-...
+```
+
+Then declare members in `~/.owl/config.yaml` using the plain OpenRouter slug:
+
+```yaml
+council:
+  # A blended fan-out-and-arbitrate member. Useful as ONE voice on the council,
+  # not as a replacement for it — Fusion's answer is a blend, so you lose the
+  # per-model attribution that is the point of owl.
+  - name: openrouter/fusion
+    source: openrouter
+  - name: anthropic/claude-sonnet-4.6
+    source: openrouter
+  - name: openai/gpt-5
+    source: openrouter
+  - name: perplexity/sonar-reasoning-pro
+    source: openrouter
+```
+
+`owl council` lists a handful of suggested slugs, but the list is not a whitelist —
+any slug from <https://openrouter.ai/models> works if you add it to the config by hand.
+
+### Direct APIs
+
+A few providers still have their own adapter, for capabilities OpenRouter's
+chat-completions endpoint does not expose. Set their keys as environment variables:
+
+```bash
+export GOOGLE_API_KEY=AI...         # Gemini Deep Research Agent (Interactions API)
 export DEEPSEEK_API_KEY=sk-...      # deepseek-v4-flash
 export XAI_API_KEY=xai-...          # Grok agentic search
 ```
@@ -222,8 +249,8 @@ answered, rather than spending a request to restate a single answer.
 | `standard` (default) | 250-400 words |
 | `detailed` | 600-1000 words |
 
-It has no effect on `openai-deep` and `google-deep` members, which use a
-fixed deep research report structure regardless of the flag.
+It has no effect on `google-deep` members, which use a fixed deep research
+report structure regardless of the flag.
 
 ### Troubleshooting
 
@@ -238,17 +265,19 @@ Run `owl council` to open the interactive selector:
 ```
 🦉 Parliament of Owls — Select Your Council
 
- #   Model                      Source        Description
+ #   Model                        Source        Description
      Standard Models (via llm)
- 1  ☑ gpt-5                     llm
- 2  ☑ claude-sonnet-4.6         llm
- 3  ☐ gemini-2.5-pro            llm
+ 1  ☑ gpt-5                       llm
+ 2  ☑ claude-sonnet-4.6           llm
+ 3  ☐ gemini-2.5-pro              llm
+     OpenRouter
+ 4  ☑ openrouter/fusion           openrouter    OpenRouter Fusion (multi-model panel)
+ 5  ☑ anthropic/claude-sonnet-4.6 openrouter    Anthropic Claude Sonnet 4.6
+ 6  ☐ perplexity/sonar-reasoning-pro openrouter Perplexity Sonar Reasoning Pro
      Deep Research
- 4  ☑ o3-deep-research          openai-deep   OpenAI Deep Research
- 5  ☑ sonar-deep-research       perplexity    Perplexity Deep Research
- 6  ☐ gemini-deep-research      google-deep   Gemini Deep Research Agent
- 7  ☐ deepseek-v4-flash         deepseek      DeepSeek V4 Flash (thinking)
- 8  ☐ grok-agentic              xai           Grok 4.5 agentic search
+ 7  ☐ gemini-deep-research        google-deep   Gemini Deep Research Agent
+ 8  ☐ deepseek-v4-flash           deepseek      DeepSeek V4 Flash (thinking)
+ 9  ☐ grok-agentic                xai           Grok 4.5 agentic search
 
 Number to toggle, /text=filter, a=all shown, n=none shown, s=save, q=quit:
 ```
@@ -260,17 +289,32 @@ shown rather than the whole list.
 
 Saved to `~/.owl/config.yaml`.
 
-## How Deep Research Works
+## Sources
 
-Each provider implements deep research differently:
+| Source | What it is | Key |
+|--------|-----------|-----|
+| `llm` | Any model from an installed `llm` plugin | `llm keys set ...` |
+| `openrouter` | Any OpenRouter slug, sent unchanged to `/chat/completions` | `OPENROUTER_API_KEY` |
+| `google-deep` | Gemini Deep Research agent — plans, searches, reads, reasons (minutes) | `GOOGLE_API_KEY` |
+| `deepseek` | `deepseek-reasoner`, chain-of-thought surfaced separately | `DEEPSEEK_API_KEY` |
+| `xai` | Grok with agentic web + X search and thinking mode | `XAI_API_KEY` |
 
 | Provider | What Happens | API |
 |----------|-------------|-----|
-| **OpenAI** | Separate model (`o3-deep-research`) that searches the web and synthesises reports. Runs as a background job that owl polls to completion | Responses API |
-| **Perplexity** | Separate model (`sonar-deep-research`) with multi-step retrieval and citations | `/chat/completions` |
+| **OpenRouter** | Any slug, sent unchanged. Web-searching slugs return citations | `/api/v1/chat/completions` |
 | **Google Gemini** | Async agent that plans, searches, reads, and reasons (can take minutes) | Interactions API |
 | **DeepSeek** | V4 Flash with thinking mode enabled (`deepseek-v4-flash`) | `/chat/completions` |
 | **xAI Grok** | Grok 4.5 with agentic web and X search | Responses API + server-side tools |
+
+Every response is attributed to the exact model slug you declared, in the terminal
+and in the GitHub Issue comment. `openrouter/fusion` is the one member that blends
+several models internally, so its comment reflects the blend, not a single model.
+
+### Retired sources
+
+`openai-deep` (`o3-deep-research`, `o4-mini-deep-research`) and `perplexity`
+(`sonar-deep-research`) were removed — the vendors retired those endpoints.
+Use the OpenRouter route instead; see the CHANGELOG for the migration.
 
 ## Security
 
@@ -282,8 +326,7 @@ Each provider implements deep research differently:
   credential-bearing query string is redacted from error text before it is
   printed or posted to GitHub
 - Chat-completion providers use a 5-minute request timeout with retry on
-  transient failures. The two polling providers run longer: OpenAI deep
-  research allows 30 minutes, Gemini deep research 10
+  transient failures. Gemini deep research polls longer, up to 10 minutes
 
 ## Claude Code Plugin
 

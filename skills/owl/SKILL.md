@@ -5,7 +5,7 @@ description: Use when working with the Parliament of Owls (owl) CLI tool — que
 
 # Parliament of Owls (owl)
 
-CLI tool that queries multiple LLMs in parallel ("a council") and displays rich results. Built on Simon Willison's `llm` library for standard model access, with native deep research API integrations.
+CLI tool that queries multiple LLMs in parallel ("a council") and displays rich results. Built on Simon Willison's `llm` library for standard model access, with a direct OpenRouter route and a few native provider adapters.
 
 ## CLI Commands
 
@@ -42,10 +42,10 @@ council:
     source: llm
   - name: claude-sonnet-4.6
     source: llm
-  - name: o3-deep-research
-    source: openai-deep
-  - name: sonar-deep-research
-    source: perplexity
+  - name: openrouter/fusion
+    source: openrouter
+  - name: anthropic/claude-sonnet-4.6
+    source: openrouter
 
 # Optional. Used by --synthesise; falls back to the first `llm` member.
 arbiter:
@@ -53,20 +53,23 @@ arbiter:
   source: llm
 ```
 
-No API keys in config. Standard models use `llm keys set`; deep research APIs use env vars.
+No API keys in config. Standard models use `llm keys set`; OpenRouter and the direct adapters use env vars.
+
+Any OpenRouter slug works as `name` with `source: openrouter` — the picker's list is suggestions, not a whitelist.
 
 ## Providers
 
 | Source | Models | Env Var |
 |--------|--------|---------|
 | `llm` | Any installed llm plugin model | `llm keys set` |
-| `openai-deep` | `o3-deep-research`, `o4-mini-deep-research` | `OPENAI_API_KEY` |
-| `perplexity` | `sonar-deep-research` | `PERPLEXITY_API_KEY` |
+| `openrouter` | Any OpenRouter slug, e.g. `openrouter/fusion`, `openai/gpt-5` | `OPENROUTER_API_KEY` |
 | `google-deep` | `gemini-deep-research` | `GOOGLE_API_KEY` |
 | `deepseek` | `deepseek-v4-flash`, `deepseek-v4-pro` | `DEEPSEEK_API_KEY` |
 | `xai` | `grok-agentic` (maps to `grok-4.5`) | `XAI_API_KEY` |
 
-Deep research models only appear in `owl models` when their API key env var is set.
+Direct-API models only appear in `owl models` when their API key env var is set.
+
+**Retired:** `openai-deep` and `perplexity` were removed in the Unreleased changelog entry — the vendors sunset `o3-deep-research`/`o4-mini-deep-research` (23 Jul 2026) and `sonar-deep-research` (27 Sep 2026). Configs naming them now fail with `Unknown source`. Migrate to `source: openrouter`.
 
 ## Architecture
 
@@ -76,7 +79,7 @@ src/owl/
   config.py          # YAML config load/save
   council.py         # Async parallel dispatch (asyncio.gather, 0.3s stagger)
   synthesis.py       # Arbiter pass that reconciles the council's answers
-  models.py          # Model discovery (llm plugins + deep research)
+  models.py          # Model discovery (llm plugins + OpenRouter + direct APIs)
   output.py          # Rich terminal formatting
   github.py          # GitHub Issues integration
   tui.py             # Interactive council selector
@@ -84,8 +87,7 @@ src/owl/
     base.py          # Provider interface + OwlResponse dataclass
     registry.py      # Source name -> provider routing
     llm_provider.py  # Wraps llm library
-    openai_deep.py   # OpenAI Responses API
-    perplexity.py    # Perplexity Chat Completions
+    openrouter.py    # OpenRouter Chat Completions (any slug)
     google_deep.py   # Gemini Interactions API (async polling)
     deepseek.py      # DeepSeek Chat Completions
     xai.py           # xAI Responses API + server-side search tools
@@ -130,7 +132,7 @@ response too large for one comment is truncated to fit.
 
 **Add a new provider:** Create `src/owl/providers/newprovider.py` extending `Provider`, add source mapping to `registry.py`, add model entry to `models.py`.
 
-**Debug missing models:** Run `owl models`. Deep research models need env vars set. Standard models need llm plugins installed (e.g. `llm install llm-claude-4`).
+**Debug missing models:** Run `owl models`. OpenRouter and direct-API models need env vars set. Standard models need llm plugins installed (e.g. `llm install llm-claude-4`).
 
 **Increase timeout:** `HttpProvider.timeout` is 300s for single-POST providers.
 Polling budgets live in the provider: `openai_deep.MAX_RESEARCH_SECONDS` (1800s)

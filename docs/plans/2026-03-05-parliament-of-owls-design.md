@@ -1,5 +1,11 @@
 # Parliament of Owls — Design Document
 
+> **Historical document, partly superseded (2026-09-20).** The `openai-deep` and
+> `perplexity` providers described below have been removed — the vendors retired
+> those endpoints. Council members now route through OpenRouter (`source: openrouter`)
+> with any model slug. See the CHANGELOG and README for the current design. This file is
+> kept as-is to record what was originally planned.
+
 ## Overview
 
 **Parliament of Owls** (`owl`) is a Python CLI tool that queries multiple LLMs and deep research APIs in parallel, displaying results in the terminal and optionally posting each response as a comment on a GitHub Issue.

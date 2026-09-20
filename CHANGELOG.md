@@ -2,10 +2,38 @@
 
 ## Unreleased
 
+### Removed
+- **BREAKING:** the `openai-deep` provider (`o3-deep-research`, `o4-mini-deep-research`) and the
+  `perplexity` provider (`sonar-deep-research`). OpenAI retired its deep-research models on
+  23 July 2026; Perplexity sunsets `sonar-deep-research` on 27 September 2026. Both adapters
+  hardcoded the dead model ids, so councils using them would have started failing silently.
+  A council member with `source: openai-deep` or `source: perplexity` now raises
+  `Unknown source` at dispatch. `OPENAI_API_KEY` and `PERPLEXITY_API_KEY` are no longer read.
+
 ### Added
+- `openrouter` provider: any OpenRouter slug can be a council member, sent unchanged to
+  `https://openrouter.ai/api/v1/chat/completions`. Needs `OPENROUTER_API_KEY`. Citations are
+  read from the reply's `annotations` array, so web-searching models still show sources.
+- `openrouter/fusion` is offered in `owl council` / `owl models`. It is one voice on the council,
+  not a replacement for it: Fusion blends several models internally, so its comment cannot carry
+  per-model attribution.
+- `owl council` and `owl models` group OpenRouter models in their own section.
+- Web-search-capable OpenRouter slugs (`openrouter/fusion`, anything with `sonar`,
+  `perplexity/` or `:online`) get the citation-demanding system prompt; other slugs do not,
+  so models without search are not invited to invent URLs.
+- Provider failures are now logged with a stack trace (`logger.exception`) instead of being silently swallowed into an error string.
+- Malformed/unexpected API responses now produce a clear error (with a payload snippet) instead of a raw `KeyError`/`IndexError`.
 - `--synthesise` (`-s`) adds an arbiter pass: one model reads every council answer in full and produces a single reconciled answer, printed above the individual responses and posted uncollapsed at the top of the GitHub comment. `--arbiter MODEL` picks the model explicitly; otherwise an optional `arbiter:` config entry is used, falling back to the first `llm` council member.
   - The arbiter is told to weigh reasoning rather than count votes, and to report confidence, material disagreement, and claims only one member made. Practitioners report that majority voting plateaus while synthesis over full reasoning recovers correct answers even when a council agrees on a wrong one, so agreement is treated as evidence to weigh rather than as the result.
   - Skipped when fewer than two members answered, rather than spending a request restating a single answer. Deep research models are never chosen as the default arbiter: slow and costly for a reconciling job.
+
+### Changed
+- The Gemini deep-research agent id moved from the retired `deep-research-pro-preview-12-2025`
+  to `deep-research-preview-04-2026`, and can now be overridden with
+  `OWL_GEMINI_DEEP_RESEARCH_AGENT` so a future rename does not need a release.
+- `get_system_prompt()` takes an optional `model_name`, used only to decide whether a model can
+  honestly be asked for citations.
+- Refactored the HTTP-based providers onto a shared `HttpProvider` base that centralises the API-key check, request/retry/timing flow, response parsing, and error logging. Each provider now only declares its request shape and how to read the reply.
 
 ### Fixed
 - `owl council` no longer tracebacks on Ctrl-D or Ctrl-C; both cancel and leave the council unchanged.
@@ -50,6 +78,25 @@
 - Refactored the HTTP-based providers (OpenAI, Perplexity, DeepSeek, xAI) onto a shared `HttpProvider` base that centralises the API-key check, request/retry/timing flow, response parsing and error logging. Each provider now declares only its request shape and how to read the reply.
 - `ruff` is pinned to a compatible release and the lint rules are selected explicitly. Ruff's default rule set expands between minor versions, which had turned CI red with no code change.
 - The version is single-sourced from `owl.__version__`; `pyproject.toml` reads it via `[tool.setuptools.dynamic]`.
+
+### Migration
+Replace retired members in `~/.owl/config.yaml`:
+
+```yaml
+# before
+- name: o3-deep-research
+  source: openai-deep
+- name: sonar-deep-research
+  source: perplexity
+
+# after
+- name: openrouter/fusion
+  source: openrouter
+- name: perplexity/sonar-reasoning-pro
+  source: openrouter
+```
+
+Then `export OPENROUTER_API_KEY=sk-or-...`.
 
 ## 0.1.0 (2026-03-05)
 

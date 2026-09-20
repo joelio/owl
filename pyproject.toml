@@ -7,14 +7,14 @@ name = "parliament-of-owls"
 # Single-sourced from owl.__version__ so the package metadata and
 # `owl --version` cannot drift apart.
 dynamic = ["version"]
-description = "Query multiple LLMs and deep research APIs in parallel, post results to GitHub Issues"
+description = "Query multiple LLMs in parallel, post per-model results to GitHub Issues"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 authors = [
     {name = "Joel Merrick"},
 ]
-keywords = ["llm", "ai", "deep-research", "multi-model", "github", "cli"]
+keywords = ["llm", "ai", "openrouter", "multi-model", "github", "cli"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
