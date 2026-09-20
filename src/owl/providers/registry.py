@@ -7,13 +7,11 @@ from .base import Provider
 from .deepseek import DeepSeekProvider
 from .google_deep import GoogleDeepProvider
 from .llm_provider import LlmProvider
-from .openai_deep import OpenAIDeepProvider
-from .perplexity import PerplexityProvider
+from .openrouter import OpenRouterProvider
 from .xai import XAIProvider
 
 SOURCE_TO_PROVIDER: dict[str, type[Provider]] = {
-    "openai-deep": OpenAIDeepProvider,
-    "perplexity": PerplexityProvider,
+    "openrouter": OpenRouterProvider,
     "google-deep": GoogleDeepProvider,
     "deepseek": DeepSeekProvider,
     "xai": XAIProvider,

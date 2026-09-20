@@ -10,8 +10,7 @@ from owl.providers.deepseek import DeepSeekProvider
 from owl.providers.google_deep import GoogleDeepProvider
 from owl.providers.http_base import parse_chat_message
 from owl.providers.llm_provider import LlmProvider
-from owl.providers.openai_deep import OpenAIDeepProvider
-from owl.providers.perplexity import PerplexityProvider
+from owl.providers.openrouter import OpenRouterProvider
 from owl.providers.registry import get_provider
 from owl.providers.xai import XAIProvider
 
@@ -29,8 +28,8 @@ class TestOwlResponse:
 
     def test_response_with_citations(self):
         r = OwlResponse(
-            model_name="sonar",
-            source="perplexity",
+            model_name="perplexity/sonar-reasoning-pro",
+            source="openrouter",
             text="Answer",
             citations=["https://example.com"],
         )
@@ -53,15 +52,23 @@ class TestRegistry:
         assert isinstance(provider, LlmProvider)
         assert provider.model_id == "gpt-5"
 
-    def test_openai_deep_provider(self):
-        member = CouncilMember(name="o3-deep-research", source="openai-deep")
+    def test_openrouter_provider(self):
+        member = CouncilMember(name="anthropic/claude-sonnet-4.6", source="openrouter")
         provider = get_provider(member)
-        assert isinstance(provider, OpenAIDeepProvider)
+        assert isinstance(provider, OpenRouterProvider)
+        assert provider.model_name == "anthropic/claude-sonnet-4.6"
 
-    def test_perplexity_provider(self):
-        member = CouncilMember(name="sonar-deep-research", source="perplexity")
+    def test_openrouter_fusion_provider(self):
+        member = CouncilMember(name="openrouter/fusion", source="openrouter")
         provider = get_provider(member)
-        assert isinstance(provider, PerplexityProvider)
+        assert isinstance(provider, OpenRouterProvider)
+        assert provider.model_name == "openrouter/fusion"
+
+    def test_dead_sources_are_gone(self):
+        """The retired deep-research adapters must not resolve any more."""
+        for source in ("openai-deep", "perplexity"):
+            with pytest.raises(ValueError, match="Unknown source"):
+                get_provider(CouncilMember(name="whatever", source=source))
 
     def test_deepseek_provider(self):
         member = CouncilMember(name="deepseek-reasoner", source="deepseek")
@@ -100,8 +107,7 @@ class TestSystemPromptWiring:
     @pytest.fixture(autouse=True)
     def clear_keys(self, monkeypatch):
         for key in [
-            "OPENAI_API_KEY",
-            "PERPLEXITY_API_KEY",
+            "OPENROUTER_API_KEY",
             "GOOGLE_API_KEY",
             "DEEPSEEK_API_KEY",
             "XAI_API_KEY",
@@ -109,17 +115,11 @@ class TestSystemPromptWiring:
             monkeypatch.delenv(key, raising=False)
 
     @pytest.mark.asyncio
-    async def test_openai_deep_accepts_system_prompt(self):
-        provider = OpenAIDeepProvider("o3-deep-research")
+    async def test_openrouter_accepts_system_prompt(self):
+        provider = OpenRouterProvider("openrouter/fusion")
         # Will fail on missing key, but should not fail on the system_prompt arg
         response = await provider.query("test", system_prompt="Be helpful")
-        assert response.error == "OPENAI_API_KEY not set"
-
-    @pytest.mark.asyncio
-    async def test_perplexity_accepts_system_prompt(self):
-        provider = PerplexityProvider()
-        response = await provider.query("test", system_prompt="Be helpful")
-        assert response.error == "PERPLEXITY_API_KEY not set"
+        assert response.error == "OPENROUTER_API_KEY not set"
 
     @pytest.mark.asyncio
     async def test_deepseek_accepts_system_prompt(self):
@@ -146,8 +146,7 @@ class TestProvidersMissingKeys:
     @pytest.fixture(autouse=True)
     def clear_keys(self, monkeypatch):
         for key in [
-            "OPENAI_API_KEY",
-            "PERPLEXITY_API_KEY",
+            "OPENROUTER_API_KEY",
             "GOOGLE_API_KEY",
             "DEEPSEEK_API_KEY",
             "XAI_API_KEY",
@@ -155,16 +154,10 @@ class TestProvidersMissingKeys:
             monkeypatch.delenv(key, raising=False)
 
     @pytest.mark.asyncio
-    async def test_openai_deep_no_key(self):
-        provider = OpenAIDeepProvider("o3-deep-research")
+    async def test_openrouter_no_key(self):
+        provider = OpenRouterProvider("openrouter/fusion")
         response = await provider.query("test")
-        assert response.error == "OPENAI_API_KEY not set"
-
-    @pytest.mark.asyncio
-    async def test_perplexity_no_key(self):
-        provider = PerplexityProvider()
-        response = await provider.query("test")
-        assert response.error == "PERPLEXITY_API_KEY not set"
+        assert response.error == "OPENROUTER_API_KEY not set"
 
     @pytest.mark.asyncio
     async def test_google_deep_no_key(self):
@@ -226,11 +219,11 @@ class TestProviderRetry:
         monkeypatch.setattr("owl.providers.retry.RETRY_DELAYS", [0.0, 0.0])
 
     @pytest.mark.asyncio
-    async def test_perplexity_retries_on_429(self, httpx_mock, monkeypatch):
-        monkeypatch.setenv("PERPLEXITY_API_KEY", "test-key")
+    async def test_openrouter_retries_on_429(self, httpx_mock, monkeypatch):
+        monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
         httpx_mock.add_response(status_code=429)
         httpx_mock.add_response(json={"choices": [{"message": {"content": "ok"}}]})
-        provider = PerplexityProvider()
+        provider = OpenRouterProvider("openrouter/fusion")
         resp = await provider.query("q")
         assert resp.error is None
         assert resp.text == "ok"
@@ -245,10 +238,10 @@ class TestSafeParsing:
         monkeypatch.setattr("owl.providers.retry.RETRY_DELAYS", [0.0, 0.0])
 
     @pytest.mark.asyncio
-    async def test_perplexity_malformed_response_is_error(self, httpx_mock, monkeypatch):
-        monkeypatch.setenv("PERPLEXITY_API_KEY", "test-key")
+    async def test_openrouter_malformed_response_is_error(self, httpx_mock, monkeypatch):
+        monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
         httpx_mock.add_response(json={"unexpected": "shape"})
-        resp = await PerplexityProvider().query("q")
+        resp = await OpenRouterProvider("openrouter/fusion").query("q")
         assert resp.text == ""
         assert resp.error is not None
         assert "unexpected response" in resp.error
@@ -264,16 +257,33 @@ class TestSafeParsing:
         assert resp.reasoning == "because"
 
     @pytest.mark.asyncio
-    async def test_perplexity_extracts_citations(self, httpx_mock, monkeypatch):
-        monkeypatch.setenv("PERPLEXITY_API_KEY", "test-key")
+    async def test_openrouter_extracts_citations_from_annotations(self, httpx_mock, monkeypatch):
+        monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
         httpx_mock.add_response(
             json={
-                "choices": [{"message": {"content": "answer"}}],
-                "citations": ["https://a.example", "https://b.example"],
+                "choices": [
+                    {
+                        "message": {
+                            "content": "answer",
+                            "annotations": [
+                                {"url_citation": {"url": "https://a.example"}},
+                                {"url_citation": {"url": "https://b.example"}},
+                                {"url_citation": {"url": "https://a.example"}},
+                            ],
+                        }
+                    }
+                ],
             }
         )
-        resp = await PerplexityProvider().query("q")
+        resp = await OpenRouterProvider("openrouter/fusion").query("q")
         assert resp.citations == ["https://a.example", "https://b.example"]
+
+    @pytest.mark.asyncio
+    async def test_openrouter_no_annotations_means_no_citations(self, httpx_mock, monkeypatch):
+        monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+        httpx_mock.add_response(json={"choices": [{"message": {"content": "answer"}}]})
+        resp = await OpenRouterProvider("openai/gpt-5").query("q")
+        assert resp.citations is None
 
 
 class TestGoogleDeepPolling:
@@ -382,84 +392,6 @@ class TestGoogleDeepAuth:
         assert resp.error is not None
         assert "secret-key-value" not in resp.error
         assert "401" in resp.error
-
-
-class TestOpenAIDeepResearch:
-    """Deep research is a background job, not a single blocking POST."""
-
-    @pytest.fixture(autouse=True)
-    def fast_poll(self, monkeypatch):
-        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-        monkeypatch.setattr("owl.providers.openai_deep.POLL_INTERVAL", 0)
-        monkeypatch.setattr("owl.providers.retry.RETRY_DELAYS", [0.0, 0.0])
-
-    def _completed(self, text="the report"):
-        return {
-            "status": "completed",
-            "output": [{"type": "message", "content": [{"type": "output_text", "text": text}]}],
-        }
-
-    def test_uses_the_supported_web_search_tool(self):
-        # Deep research models reject the plain "web_search" tool with a 400.
-        request = OpenAIDeepProvider("o3-deep-research").build_request("q", None, "k")
-        assert request["json"]["tools"] == [{"type": "web_search_preview"}]
-
-    def test_starts_the_job_in_background_mode(self):
-        request = OpenAIDeepProvider("o3-deep-research").build_request("q", None, "k")
-        assert request["json"]["background"] is True
-
-    @pytest.mark.asyncio
-    async def test_polls_until_completed(self, httpx_mock):
-        httpx_mock.add_response(json={"id": "resp_1", "status": "queued"})
-        httpx_mock.add_response(json={"id": "resp_1", "status": "in_progress"})
-        httpx_mock.add_response(json=self._completed())
-
-        resp = await OpenAIDeepProvider("o3-deep-research").query("q")
-
-        assert resp.error is None
-        assert resp.text == "the report"
-        assert len(httpx_mock.get_requests()) == 3
-
-    @pytest.mark.asyncio
-    async def test_immediate_completion_needs_no_polling(self, httpx_mock):
-        httpx_mock.add_response(json=self._completed("done already"))
-
-        resp = await OpenAIDeepProvider("o3-deep-research").query("q")
-
-        assert resp.text == "done already"
-        assert len(httpx_mock.get_requests()) == 1
-
-    @pytest.mark.asyncio
-    async def test_failed_status_becomes_an_error(self, httpx_mock):
-        httpx_mock.add_response(json={"id": "resp_1", "status": "queued"})
-        httpx_mock.add_response(
-            json={"status": "failed", "error": {"message": "rate limit exceeded"}}
-        )
-
-        resp = await OpenAIDeepProvider("o3-deep-research").query("q")
-
-        assert resp.text == ""
-        assert resp.error is not None
-        assert "failed" in resp.error
-        assert "rate limit exceeded" in resp.error
-
-    @pytest.mark.asyncio
-    async def test_incomplete_status_reports_the_reason(self, httpx_mock):
-        httpx_mock.add_response(
-            json={"status": "incomplete", "incomplete_details": {"reason": "max_output_tokens"}}
-        )
-
-        resp = await OpenAIDeepProvider("o3-deep-research").query("q")
-
-        assert "max_output_tokens" in (resp.error or "")
-
-    @pytest.mark.asyncio
-    async def test_missing_id_is_an_error(self, httpx_mock):
-        httpx_mock.add_response(json={"status": "queued"})
-
-        resp = await OpenAIDeepProvider("o3-deep-research").query("q")
-
-        assert "no id" in (resp.error or "")
 
 
 class TestDeepSeekContract:
@@ -585,7 +517,7 @@ class TestProviderConstruction:
 
     @pytest.mark.parametrize(
         "cls",
-        [LlmProvider, OpenAIDeepProvider, PerplexityProvider, DeepSeekProvider, XAIProvider],
+        [LlmProvider, OpenRouterProvider, DeepSeekProvider, XAIProvider],
     )
     def test_accepts_the_model_name_keyword(self, cls):
         assert cls(model_name="some-model").model_name == "some-model"
@@ -593,3 +525,43 @@ class TestProviderConstruction:
     def test_llm_provider_keeps_model_id_alias(self):
         provider = LlmProvider(model_name="gpt-5")
         assert provider.model_id == "gpt-5"
+
+
+class TestOpenRouterAttribution:
+    """A council member declared as a plain OpenRouter slug must be sent
+    unchanged and attributed back to that exact slug."""
+
+    @pytest.fixture(autouse=True)
+    def set_key(self, monkeypatch):
+        monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "slug",
+        ["openrouter/fusion", "anthropic/claude-sonnet-4.6", "openai/gpt-5"],
+    )
+    async def test_slug_sent_and_attributed(self, httpx_mock, slug):
+        import json
+
+        httpx_mock.add_response(json={"choices": [{"message": {"content": "hi"}}]})
+        resp = await OpenRouterProvider(slug).query("q")
+
+        request = httpx_mock.get_request()
+        assert str(request.url) == "https://openrouter.ai/api/v1/chat/completions"
+        assert json.loads(request.content)["model"] == slug
+        # Attribution: the response carries the exact slug that was asked for.
+        assert resp.model_name == slug
+        assert resp.source == "openrouter"
+
+    @pytest.mark.asyncio
+    async def test_fusion_reply_is_not_relabelled_by_upstream(self, httpx_mock):
+        """Fusion blends several models; owl still attributes it to the declared
+        slug rather than whatever upstream name comes back."""
+        httpx_mock.add_response(
+            json={
+                "model": "some/underlying-model",
+                "choices": [{"message": {"content": "blended answer"}}],
+            }
+        )
+        resp = await OpenRouterProvider("openrouter/fusion").query("q")
+        assert resp.model_name == "openrouter/fusion"

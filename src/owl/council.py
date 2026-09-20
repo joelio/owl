@@ -22,7 +22,7 @@ async def query_member(
 ) -> OwlResponse:
     """Query a single council member with an appropriate system prompt."""
     provider = get_provider(member)
-    system_prompt = get_system_prompt(member.source, fmt)
+    system_prompt = get_system_prompt(member.source, fmt, model_name=member.name)
     try:
         return await provider.query(prompt, system_prompt=system_prompt)
     except Exception as e:

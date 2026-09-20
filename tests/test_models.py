@@ -5,8 +5,10 @@ from __future__ import annotations
 from owl.models import (
     DEEP_RESEARCH_KEY_MAP,
     DEEP_RESEARCH_MODELS,
+    OPENROUTER_MODELS,
     discover_deep_research_models,
     discover_llm_models,
+    discover_openrouter_models,
 )
 
 
@@ -23,15 +25,15 @@ class TestDeepResearchModels:
         result = discover_deep_research_models()
         assert result == []
 
-    def test_discover_with_openai_key(self, monkeypatch):
+    def test_discover_with_single_key(self, monkeypatch):
         for env_var in DEEP_RESEARCH_KEY_MAP.values():
             monkeypatch.delenv(env_var, raising=False)
-        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
         result = discover_deep_research_models()
         names = [m.name for m in result]
-        assert "o3-deep-research" in names
-        assert "o4-mini-deep-research" in names
-        assert "sonar-deep-research" not in names
+        assert "deepseek-v4-flash" in names
+        assert "deepseek-v4-pro" in names
+        assert "gemini-deep-research" not in names
 
     def test_discover_with_all_keys(self, monkeypatch):
         for env_var in DEEP_RESEARCH_KEY_MAP.values():
@@ -42,6 +44,41 @@ class TestDeepResearchModels:
     def test_all_deep_models_are_deep_category(self):
         for model in DEEP_RESEARCH_MODELS:
             assert model.category == "deep-research"
+
+    def test_retired_adapters_are_gone(self):
+        """The sunset OpenAI/Perplexity deep-research models must not be offered."""
+        names = {m.name for m in DEEP_RESEARCH_MODELS}
+        sources = {m.source for m in DEEP_RESEARCH_MODELS}
+        assert names.isdisjoint(
+            {"o3-deep-research", "o4-mini-deep-research", "sonar-deep-research"}
+        )
+        assert sources.isdisjoint({"openai-deep", "perplexity"})
+        assert "openai-deep" not in DEEP_RESEARCH_KEY_MAP
+        assert "perplexity" not in DEEP_RESEARCH_KEY_MAP
+
+
+class TestOpenRouterModels:
+    def test_fusion_is_offered(self):
+        names = [m.name for m in OPENROUTER_MODELS]
+        assert "openrouter/fusion" in names
+
+    def test_all_openrouter_models_share_source_and_category(self):
+        for model in OPENROUTER_MODELS:
+            assert model.source == "openrouter"
+            assert model.category == "openrouter"
+
+    def test_openrouter_key_is_mapped(self):
+        assert DEEP_RESEARCH_KEY_MAP["openrouter"] == "OPENROUTER_API_KEY"
+
+    def test_discover_without_key(self, monkeypatch):
+        monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+        assert discover_openrouter_models() == []
+
+    def test_discover_with_key(self, monkeypatch):
+        monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+        result = discover_openrouter_models()
+        assert len(result) == len(OPENROUTER_MODELS)
+        assert "openrouter/fusion" in [m.name for m in result]
 
 
 class TestLlmModels:

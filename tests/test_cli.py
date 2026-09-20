@@ -53,13 +53,13 @@ class TestCLI:
         config = Config(
             council=[
                 CouncilMember("gpt-5", "llm"),
-                CouncilMember("sonar-deep-research", "perplexity"),
+                CouncilMember("openrouter/fusion", "openrouter"),
             ]
         )
         monkeypatch.setattr("owl.cli.main.load_config", lambda: config)
         result = runner.invoke(cli, ["council-list"])
         assert "gpt-5" in result.output
-        assert "sonar-deep-research" in result.output
+        assert "openrouter/fusion" in result.output
 
     def test_ask_with_format_flag(self, runner, monkeypatch):
         config = Config(council=[CouncilMember("test-model", "llm")])

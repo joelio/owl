@@ -22,9 +22,9 @@ class TestCouncilMember:
         assert m.to_dict() == {"name": "gpt-5", "source": "llm"}
 
     def test_from_dict(self):
-        m = CouncilMember.from_dict({"name": "sonar-deep-research", "source": "perplexity"})
-        assert m.name == "sonar-deep-research"
-        assert m.source == "perplexity"
+        m = CouncilMember.from_dict({"name": "openrouter/fusion", "source": "openrouter"})
+        assert m.name == "openrouter/fusion"
+        assert m.source == "openrouter"
 
 
 class TestConfig:
@@ -36,14 +36,14 @@ class TestConfig:
     def test_roundtrip(self):
         members = [
             CouncilMember("gpt-5", "llm"),
-            CouncilMember("o3-deep-research", "openai-deep"),
+            CouncilMember("openrouter/fusion", "openrouter"),
         ]
         c = Config(council=members)
         d = c.to_dict()
         c2 = Config.from_dict(d)
         assert len(c2.council) == 2
         assert c2.council[0].name == "gpt-5"
-        assert c2.council[1].source == "openai-deep"
+        assert c2.council[1].source == "openrouter"
 
     def test_from_dict_missing_council(self):
         c = Config.from_dict({})
@@ -75,7 +75,7 @@ class TestLoadSave:
         config = Config(
             council=[
                 CouncilMember("gpt-5", "llm"),
-                CouncilMember("sonar-deep-research", "perplexity"),
+                CouncilMember("openrouter/fusion", "openrouter"),
             ]
         )
         save_config(config)

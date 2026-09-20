@@ -44,8 +44,8 @@ class TestPrintResponses:
     def test_response_with_citations(self):
         responses = [
             OwlResponse(
-                model_name="sonar",
-                source="perplexity",
+                model_name="perplexity/sonar-reasoning-pro",
+                source="openrouter",
                 text="Answer",
                 citations=["https://example.com"],
             ),

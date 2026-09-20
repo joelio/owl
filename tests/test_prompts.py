@@ -15,7 +15,7 @@ class TestResponseFormat:
 
 
 class TestGetSystemPrompt:
-    @pytest.mark.parametrize("source", ["llm", "xai", "perplexity", "deepseek"])
+    @pytest.mark.parametrize("source", ["llm", "xai", "openrouter", "deepseek"])
     def test_standard_sources_contain_structure(self, source):
         prompt = get_system_prompt(source)
         assert "ANSWER:" in prompt
@@ -24,7 +24,7 @@ class TestGetSystemPrompt:
         assert "KEY POINTS:" in prompt
 
     def test_deep_research_sources_contain_synthesis(self):
-        for source in ("openai-deep", "google-deep"):
+        for source in ("google-deep",):
             prompt = get_system_prompt(source)
             assert "SYNTHESIS" in prompt
             assert "EVIDENCE" in prompt
@@ -33,14 +33,29 @@ class TestGetSystemPrompt:
 
     def test_deep_research_ignores_format(self):
         """Deep research always returns the same template regardless of format."""
-        brief = get_system_prompt("openai-deep", ResponseFormat.BRIEF)
-        detailed = get_system_prompt("openai-deep", ResponseFormat.DETAILED)
+        brief = get_system_prompt("google-deep", ResponseFormat.BRIEF)
+        detailed = get_system_prompt("google-deep", ResponseFormat.DETAILED)
         assert brief == detailed
 
-    def test_perplexity_includes_citation_instructions(self):
-        prompt = get_system_prompt("perplexity")
+    @pytest.mark.parametrize(
+        "slug",
+        ["openrouter/fusion", "perplexity/sonar-reasoning-pro", "openai/gpt-4o:online"],
+    )
+    def test_web_searching_slugs_get_citation_instructions(self, slug):
+        prompt = get_system_prompt("openrouter", model_name=slug)
         assert "Cite at least 3" in prompt
         assert "[1]" in prompt
+
+    def test_non_searching_slugs_are_not_asked_to_cite(self):
+        """Asking a model without web search for sources just invites made-up URLs."""
+        prompt = get_system_prompt("openrouter", model_name="openai/gpt-5")
+        assert "Cite at least 3" not in prompt
+        assert "ANSWER:" in prompt
+
+    def test_retired_sources_fall_back_to_standard(self):
+        """openai-deep / perplexity are gone; they must not get special handling."""
+        for source in ("openai-deep", "perplexity"):
+            assert get_system_prompt(source) == get_system_prompt("llm")
 
     def test_deepseek_skips_cot(self):
         prompt = get_system_prompt("deepseek")
@@ -59,7 +74,7 @@ class TestGetSystemPrompt:
         assert expected_fragment in prompt
 
     def test_uncertainty_instruction_present(self):
-        for source in ("llm", "perplexity", "deepseek", "xai"):
+        for source in ("llm", "openrouter", "deepseek", "xai"):
             prompt = get_system_prompt(source)
             assert "uncertain" in prompt.lower()
 

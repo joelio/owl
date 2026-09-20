@@ -1,4 +1,4 @@
-"""Model discovery - finds available models from llm plugins and deep research APIs."""
+"""Model discovery - finds available models from llm plugins and direct APIs."""
 
 from __future__ import annotations
 
@@ -9,31 +9,50 @@ from dataclasses import dataclass
 @dataclass
 class AvailableModel:
     name: str
-    source: str  # "llm", "openai-deep", "perplexity", "google-deep", "deepseek", "xai"
-    category: str  # "standard" or "deep-research"
+    source: str  # "llm", "openrouter", "google-deep", "deepseek", "xai"
+    category: str  # "standard", "openrouter" or "deep-research"
     description: str = ""
 
 
+# OpenRouter models that are always available if OPENROUTER_API_KEY is set.
+# These are a starting point, not a whitelist: any OpenRouter slug can be used
+# as a council member by adding it to ~/.owl/config.yaml with source "openrouter".
+# Slugs below were checked against https://openrouter.ai/api/v1/models on 2026-09-20.
+OPENROUTER_MODELS = [
+    AvailableModel(
+        name="openrouter/fusion",
+        source="openrouter",
+        category="openrouter",
+        description="OpenRouter Fusion (multi-model panel + web search, blended answer)",
+    ),
+    AvailableModel(
+        name="perplexity/sonar-reasoning-pro",
+        source="openrouter",
+        category="openrouter",
+        description="Perplexity Sonar Reasoning Pro (web search + citations)",
+    ),
+    AvailableModel(
+        name="openai/gpt-5",
+        source="openrouter",
+        category="openrouter",
+        description="OpenAI GPT-5",
+    ),
+    AvailableModel(
+        name="anthropic/claude-sonnet-4.6",
+        source="openrouter",
+        category="openrouter",
+        description="Anthropic Claude Sonnet 4.6",
+    ),
+    AvailableModel(
+        name="google/gemini-3.5-flash",
+        source="openrouter",
+        category="openrouter",
+        description="Google Gemini 3.5 Flash",
+    ),
+]
+
 # Deep research models that are always available if the API key is set
 DEEP_RESEARCH_MODELS = [
-    AvailableModel(
-        name="o3-deep-research",
-        source="openai-deep",
-        category="deep-research",
-        description="OpenAI Deep Research (multi-step web synthesis)",
-    ),
-    AvailableModel(
-        name="o4-mini-deep-research",
-        source="openai-deep",
-        category="deep-research",
-        description="OpenAI Deep Research (faster, cheaper)",
-    ),
-    AvailableModel(
-        name="sonar-deep-research",
-        source="perplexity",
-        category="deep-research",
-        description="Perplexity Deep Research (web search + citations)",
-    ),
     AvailableModel(
         name="gemini-deep-research",
         source="google-deep",
@@ -60,10 +79,9 @@ DEEP_RESEARCH_MODELS = [
     ),
 ]
 
-# Map of deep research source -> required env var
+# Map of direct-API source -> required env var
 DEEP_RESEARCH_KEY_MAP = {
-    "openai-deep": "OPENAI_API_KEY",
-    "perplexity": "PERPLEXITY_API_KEY",
+    "openrouter": "OPENROUTER_API_KEY",
     "google-deep": "GOOGLE_API_KEY",
     "deepseek": "DEEPSEEK_API_KEY",
     "xai": "XAI_API_KEY",
@@ -90,16 +108,21 @@ def discover_llm_models() -> list[AvailableModel]:
         return []
 
 
+def _with_key(models: list[AvailableModel]) -> list[AvailableModel]:
+    """Filter to models whose source has its API key set."""
+    return [m for m in models if os.environ.get(DEEP_RESEARCH_KEY_MAP.get(m.source, ""))]
+
+
+def discover_openrouter_models() -> list[AvailableModel]:
+    """Return the suggested OpenRouter models, if OPENROUTER_API_KEY is set."""
+    return _with_key(OPENROUTER_MODELS)
+
+
 def discover_deep_research_models() -> list[AvailableModel]:
     """Return deep research models that have API keys configured."""
-    available = []
-    for model in DEEP_RESEARCH_MODELS:
-        env_var = DEEP_RESEARCH_KEY_MAP.get(model.source, "")
-        if os.environ.get(env_var):
-            available.append(model)
-    return available
+    return _with_key(DEEP_RESEARCH_MODELS)
 
 
 def discover_all_models() -> list[AvailableModel]:
-    """Discover all available models from llm and deep research APIs."""
-    return discover_llm_models() + discover_deep_research_models()
+    """Discover all available models from llm plugins and direct APIs."""
+    return discover_llm_models() + discover_openrouter_models() + discover_deep_research_models()

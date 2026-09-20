@@ -15,6 +15,18 @@ from .models import AvailableModel, discover_all_models
 # capped and the filter is how you reach anything past the cap.
 MAX_VISIBLE = 30
 
+_CATEGORY_LABELS = {
+    "standard": "Standard Models (via llm)",
+    "openrouter": "OpenRouter",
+    "deep-research": "Deep Research",
+}
+_CATEGORY_COLOURS = {
+    "standard": "cyan",
+    "openrouter": "green",
+    "deep-research": "magenta",
+}
+_CATEGORY_ORDER = ("standard", "openrouter", "deep-research")
+
 
 def _key(model: AvailableModel | CouncilMember) -> str:
     return f"{model.source}:{model.name}"
@@ -94,8 +106,8 @@ def _render(console: Console, selection: Selection) -> None:
     last_category = None
     for index, model in enumerate(selection.visible(), start=1):
         if model.category != last_category:
-            label = "Standard Models (via llm)" if model.category == "standard" else "Deep Research"
-            colour = "cyan" if model.category == "standard" else "magenta"
+            label = _CATEGORY_LABELS.get(model.category, "Deep Research")
+            colour = _CATEGORY_COLOURS.get(model.category, "magenta")
             table.add_row("", "", f"[bold {colour}]{label}[/bold {colour}]", "", "")
             last_category = model.category
         check = "☑" if selection.is_selected(model) else "☐"
@@ -121,9 +133,9 @@ def run_council_selector() -> Config:
         console.print("[red]No models found![/red] Install llm plugins or set API keys.")
         return config
 
-    # Standard models first, then deep research, so numbering is predictable.
-    ordered = [m for m in available if m.category == "standard"] + [
-        m for m in available if m.category != "standard"
+    # Standard, then OpenRouter, then deep research, so numbering is predictable.
+    ordered = [m for category in _CATEGORY_ORDER for m in available if m.category == category] + [
+        m for m in available if m.category not in _CATEGORY_ORDER
     ]
     selection = Selection.from_config(ordered, config)
 

@@ -16,7 +16,7 @@ CONFIG_FILE = CONFIG_DIR / "config.yaml"
 @dataclass
 class CouncilMember:
     name: str
-    source: str  # "llm", "openai-deep", "perplexity", "google-deep", "deepseek", "xai"
+    source: str  # "llm", "openrouter", "google-deep", "deepseek", "xai"
 
     def to_dict(self) -> dict[str, str]:
         return {"name": self.name, "source": self.source}

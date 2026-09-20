@@ -42,12 +42,12 @@ async def test_convene_parallel_dispatch():
 
 @pytest.mark.asyncio
 async def test_query_member_uses_correct_provider():
-    member = CouncilMember("o3-deep-research", "openai-deep")
+    member = CouncilMember("openrouter/fusion", "openrouter")
 
     with patch("owl.council.get_provider") as mock_get:
         mock_provider = AsyncMock()
         mock_provider.query.return_value = OwlResponse(
-            model_name="o3-deep-research", source="openai-deep", text="result"
+            model_name="openrouter/fusion", source="openrouter", text="result"
         )
         mock_get.return_value = mock_provider
 
@@ -90,3 +90,47 @@ async def test_convene_passes_format():
         await convene("test", config, fmt=ResponseFormat.DETAILED)
 
     mock_qm.assert_called_once_with(ANY, "test", ResponseFormat.DETAILED)
+
+
+@pytest.mark.asyncio
+async def test_convene_attributes_each_response_to_its_own_member():
+    """Per-model attribution is owl's point: N members in, N distinctly
+    attributed responses out, in the same order."""
+    config = Config(
+        council=[
+            CouncilMember("openrouter/fusion", "openrouter"),
+            CouncilMember("anthropic/claude-sonnet-4.6", "openrouter"),
+            CouncilMember("gpt-5", "llm"),
+        ]
+    )
+
+    def fake_provider_for(member):
+        provider = AsyncMock()
+        provider.query.return_value = OwlResponse(
+            model_name=member.name, source=member.source, text=f"answer from {member.name}"
+        )
+        return provider
+
+    with patch("owl.council.get_provider", side_effect=fake_provider_for):
+        results = await convene("test", config)
+
+    assert [r.model_name for r in results] == [m.name for m in config.council]
+    assert [r.source for r in results] == [m.source for m in config.council]
+    assert results[0].text == "answer from openrouter/fusion"
+
+
+@pytest.mark.asyncio
+async def test_query_member_passes_model_name_to_prompt_selection():
+    """A web-searching OpenRouter slug should get the citation prompt."""
+    member = CouncilMember("openrouter/fusion", "openrouter")
+
+    with patch("owl.council.get_provider") as mock_get:
+        mock_provider = AsyncMock()
+        mock_provider.query.return_value = OwlResponse(
+            model_name=member.name, source=member.source, text="result"
+        )
+        mock_get.return_value = mock_provider
+        await query_member(member, "test prompt")
+
+    system_prompt = mock_provider.query.call_args.kwargs["system_prompt"]
+    assert "Cite at least 3" in system_prompt

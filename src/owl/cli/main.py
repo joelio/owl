@@ -188,6 +188,7 @@ def models() -> None:
         return
 
     standard = [m for m in available if m.category == "standard"]
+    openrouter = [m for m in available if m.category == "openrouter"]
     deep = [m for m in available if m.category == "deep-research"]
 
     console.print("\n[bold]🦉 Available Models[/bold]\n")
@@ -195,6 +196,11 @@ def models() -> None:
     if standard:
         console.print("[bold cyan]Standard (via llm)[/bold cyan]")
         for m in standard:
+            console.print(f"  • {m.name} [dim]{m.description}[/dim]")
+
+    if openrouter:
+        console.print("\n[bold green]OpenRouter[/bold green]")
+        for m in openrouter:
             console.print(f"  • {m.name} [dim]{m.description}[/dim]")
 
     if deep:

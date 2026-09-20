@@ -19,8 +19,8 @@ class TestFormatResponseSection:
 
     def test_response_with_citations(self):
         r = OwlResponse(
-            model_name="sonar",
-            source="perplexity",
+            model_name="perplexity/sonar-reasoning-pro",
+            source="openrouter",
             text="Answer",
             citations=["https://example.com", "https://other.com"],
         )
@@ -48,9 +48,10 @@ class TestFormatResponseSection:
         assert "llm plugin" in section
 
     def test_source_label_for_deep_research(self):
-        r = OwlResponse(model_name="o3", source="openai-deep", text="test")
+        r = OwlResponse(model_name="openrouter/fusion", source="openrouter", text="test")
         section = _format_response_section(r)
-        assert "openai-deep" in section
+        assert "openrouter" in section
+        assert "openrouter/fusion" in section
 
     def test_timing_shown(self):
         r = OwlResponse(model_name="gpt-5", source="llm", text="test", elapsed_seconds=2.3)

@@ -73,7 +73,8 @@ Constraints:
 # ---------------------------------------------------------------------------
 
 
-def _perplexity_system(fmt: ResponseFormat) -> str:
+def _web_search_system(fmt: ResponseFormat) -> str:
+    """Prompt for models that actually search the web, so citations are real."""
     return f"""\
 You are an expert research analyst with access to current web sources.
 
@@ -179,7 +180,12 @@ No preamble. Begin directly with ANSWER:."""
 # Public API
 # ---------------------------------------------------------------------------
 
-_DEEP_SOURCES = frozenset({"openai-deep", "google-deep"})
+_DEEP_SOURCES = frozenset({"google-deep"})
+
+# OpenRouter slugs that do their own web search, and so can be asked for sources.
+# Anything else gets the generic template — asking a model without search to
+# cite sources just invites invented URLs.
+_WEB_SEARCH_SLUG_HINTS = ("openrouter/fusion", "sonar", "perplexity/", ":online")
 
 
 def get_arbiter_prompt() -> str:
@@ -187,21 +193,33 @@ def get_arbiter_prompt() -> str:
     return _ARBITER_TEMPLATE
 
 
-def get_system_prompt(source: str, fmt: ResponseFormat = ResponseFormat.STANDARD) -> str:
+def _does_web_search(model_name: str) -> bool:
+    lowered = model_name.lower()
+    return any(hint in lowered for hint in _WEB_SEARCH_SLUG_HINTS)
+
+
+def get_system_prompt(
+    source: str,
+    fmt: ResponseFormat = ResponseFormat.STANDARD,
+    model_name: str = "",
+) -> str:
     """Return an appropriate system prompt for the given provider source and format.
 
     Parameters
     ----------
     source:
-        The provider source key (e.g. "llm", "perplexity", "openai-deep").
+        The provider source key (e.g. "llm", "openrouter", "google-deep").
     fmt:
         Desired response length.
+    model_name:
+        The council member's model name.  Only used to decide whether a model
+        can be asked for citations.
     """
     if source in _DEEP_SOURCES:
         return _DEEP_RESEARCH_TEMPLATE
 
-    if source == "perplexity":
-        return _perplexity_system(fmt)
+    if source == "openrouter" and _does_web_search(model_name):
+        return _web_search_system(fmt)
 
     if source == "deepseek":
         return _deepseek_system(fmt)
