@@ -53,7 +53,7 @@ dev = [
     "pytest-httpx>=0.30",
     # Pinned to a compatible release: ruff's default rule set and formatter
     # output both change between minor versions, which silently breaks CI.
-    "ruff>=0.16,<0.17",
+    "ruff>=0.16,<0.18",
     "mypy>=1.11",
     "types-PyYAML",
 ]
